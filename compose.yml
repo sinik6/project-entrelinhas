@@ -1,0 +1,44 @@
+# Ambiente de desenvolvimento: PostgreSQL + API (backend/) com recarga automática.
+# Portas 5432 e 8000 costumam estar ocupadas por outros projetos nesta máquina: o banco não
+# publica porta e a API sai em 8010.
+#   docker compose up --build
+name: entrelinhas
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-entrelinhas}
+      POSTGRES_USER: ${POSTGRES_USER:-entrelinhas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-entrelinhas}
+      TZ: UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      POSTGRES_HOST: postgres
+    ports:
+      - "8010:8000"
+    volumes:
+      - ./backend:/app
+    user: root
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+volumes:
+  postgres_data:

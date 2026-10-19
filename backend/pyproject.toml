@@ -1,0 +1,42 @@
+[project]
+name = "entrelinhas-backend"
+version = "0.1.0"
+description = "Entrelinhas — API do diário compartilhado para duas pessoas (Django + DRF)."
+authors = [{ name = "jpjamal", email = "jpfisica3@gmail.com" }]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "djangorestframework>=3.17.2,<3.18",
+    "psycopg[binary]>=3.2",
+    "gunicorn>=23",
+    "whitenoise>=6.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.11",
+    "ruff>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["apps", "tests"]
+addopts = "--reuse-db -p no:cacheprovider"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["**/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "DJ"]
+ignore = [
+    "E501",
+    "RUF012",
+    "RUF001", "RUF002", "RUF003",
+]

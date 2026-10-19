@@ -1,0 +1,83 @@
+# Produção na VPS: https://jpsys.duckdns.org/entrelinhas (e pelo IP).
+# O Traefik central (projeto traefikproxy) termina o HTTPS, emite os certificados e roteia pelos
+# labels abaixo; este projeto não publica porta nenhuma nem tem proxy próprio. Segredos chegam do
+# GitHub Actions no .env.production (modo 600).
+#   docker compose -f docker-compose.deploy.yml --env-file .env.production up -d
+#
+# A rede traefik_proxy é dividida com outros sistemas, e o Docker registra o nome de cada serviço
+# como nome de rede em todas as redes dele. Por isso os serviços que entram nela têm nome único
+# (entrelinhas-api). A API não tem rota pública: o Traefik expõe dela apenas o Django Admin e os
+# estáticos dele; o resto de /entrelinhas será do front (entrelinhas-web, tarefa T0304).
+# Fotos (T0501) pedirão um bucket no SILO (rede infra_storage); ainda não entra aqui.
+name: project-entrelinhas
+
+x-origens: &origens https://jpsys.duckdns.org,https://217.216.82.25
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: entrelinhas
+      POSTGRES_USER: entrelinhas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U entrelinhas -d entrelinhas]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      internal:
+        aliases: [entrelinhas-db]
+
+  entrelinhas-api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Configure DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: jpsys.duckdns.org,217.216.82.25,entrelinhas-api,localhost,127.0.0.1
+      DJANGO_CSRF_TRUSTED_ORIGINS: *origens
+      # O Traefik já redireciona para HTTPS; o BFF fala com a API por HTTP na rede interna.
+      DJANGO_SSL_REDIRECT: 'false'
+      DJANGO_PREFIXO_URL: entrelinhas
+      POSTGRES_HOST: entrelinhas-db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db: {condition: service_healthy}
+    networks:
+      internal:
+        aliases: [entrelinhas-api]
+      traefik_proxy: {}
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: traefik_proxy
+      traefik.http.services.entrelinhas-api.loadbalancer.server.port: '8000'
+      # Só o Django Admin e os estáticos dele.
+      traefik.http.routers.entrelinhas-admin-duckdns.rule: Host(`jpsys.duckdns.org`) && (PathPrefix(`/entrelinhas/admin/`) || PathPrefix(`/entrelinhas/django-static/`))
+      traefik.http.routers.entrelinhas-admin-duckdns.entrypoints: websecure
+      traefik.http.routers.entrelinhas-admin-duckdns.tls: 'true'
+      traefik.http.routers.entrelinhas-admin-duckdns.tls.certresolver: duckdns
+      traefik.http.routers.entrelinhas-admin-duckdns.priority: '200'
+      traefik.http.routers.entrelinhas-admin-duckdns.middlewares: secure-headers@file
+      traefik.http.routers.entrelinhas-admin-duckdns.service: entrelinhas-api
+      traefik.http.routers.entrelinhas-admin-ip.rule: Host(`217.216.82.25`) && (PathPrefix(`/entrelinhas/admin/`) || PathPrefix(`/entrelinhas/django-static/`))
+      traefik.http.routers.entrelinhas-admin-ip.entrypoints: websecure
+      traefik.http.routers.entrelinhas-admin-ip.tls: 'true'
+      traefik.http.routers.entrelinhas-admin-ip.priority: '200'
+      traefik.http.routers.entrelinhas-admin-ip.middlewares: secure-headers@file
+      traefik.http.routers.entrelinhas-admin-ip.service: entrelinhas-api
+      # HTTP → HTTPS do Admin, pelo middleware central.
+      traefik.http.routers.entrelinhas-http.rule: PathPrefix(`/entrelinhas/`)
+      traefik.http.routers.entrelinhas-http.entrypoints: web
+      traefik.http.routers.entrelinhas-http.middlewares: redirect-to-https@file
+      traefik.http.routers.entrelinhas-http.service: entrelinhas-api
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+  traefik_proxy:
+    external: true

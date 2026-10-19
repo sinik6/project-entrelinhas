@@ -1,0 +1,100 @@
+name: Deploy Entrelinhas
+
+# Publica na VPS o commit que o CI acabou de aprovar na main — nunca código não testado.
+# Também pode ser disparado à mão (Actions → Deploy Entrelinhas → Run workflow), sobre a main.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  APP_NAME: project-entrelinhas
+  COMPOSE_FILE: docker-compose.deploy.yml
+
+concurrency:
+  group: entrelinhas-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Validate compose file
+        env:
+          POSTGRES_PASSWORD: validate-only
+          DJANGO_SECRET_KEY: validate-only
+        run: docker compose -f ${{ env.COMPOSE_FILE }} config > /dev/null
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ vars.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Ensure directory exists
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} \
+            "mkdir -p ~/${{ env.APP_NAME }} ~/backups/${{ env.APP_NAME }}; chmod 700 ~/backups/${{ env.APP_NAME }}"
+
+      - name: Sync files to server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.claude/' \
+            --exclude='__pycache__/' \
+            --exclude='*.pyc' \
+            --exclude='.venv/' \
+            --exclude='node_modules/' \
+            --exclude='.next/' \
+            --exclude='docs/' \
+            --exclude='backend/staticfiles/' \
+            ./ ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:~/${{ env.APP_NAME }}/
+
+      - name: Generate .env.production on server
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          umask 077
+          # vars do GitHub → KEY=VALUE (menos as de infraestrutura do CI)
+          echo '${{ toJSON(vars) }}' | jq -r '
+            to_entries
+            | map(select(.key | test("^(DEPLOY_HOST|DEPLOY_USER)$") | not))
+            | .[] | "\(.key)=\(.value)"
+          ' > /tmp/.env.production
+          echo "APP_NAME=$APP_NAME" >> /tmp/.env.production
+
+          # segredos (não iteráveis): obrigatórios e sem quebra de linha
+          for nome in DJANGO_SECRET_KEY POSTGRES_PASSWORD; do
+            valor="${!nome}"
+            if [ -z "$valor" ]; then echo "Segredo $nome não configurado no ambiente production" >&2; exit 1; fi
+            if [[ "$valor" == *$'\n'* || "$valor" == *$'\r'* ]]; then echo "Segredo $nome tem quebra de linha" >&2; exit 1; fi
+            printf '%s=%s\n' "$nome" "$valor" >> /tmp/.env.production
+          done
+
+          scp -i ~/.ssh/deploy_key /tmp/.env.production \
+            ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:~/${{ env.APP_NAME }}/.env.production
+          ssh -i ~/.ssh/deploy_key ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} \
+            "chmod 600 ~/${{ env.APP_NAME }}/.env.production"
+          rm -f /tmp/.env.production
+          echo "✅ .env.production gerado"
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} \
+            "set -e; cd ~/${{ env.APP_NAME }}; bash infra/deploy.sh"

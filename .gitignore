@@ -1,0 +1,38 @@
+### Editores / SO ###
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+### Ambiente ###
+.env
+.env.*
+!.env.example
+
+### Python ###
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+### Django ###
+staticfiles/
+media/
+arquivos/
+
+### Frontend (Next.js) ###
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+### Logs ###
+*.log
+
+### Claude Code ###
+.claude/
