@@ -1,8 +1,8 @@
 # Entrelinhas — especificação de origem (SDD)
 
-> Texto recebido do dono do produto em 2026-10-19, guardado como veio. Vira a base de
-> `docs/constitution.md`, `docs/product.md`, `docs/architecture.md`, `docs/data-model.md` e
-> `docs/roadmap.md` quando as decisões pendentes forem aprovadas.
+> Texto recebido do dono do produto em 2026-10-19, guardado como veio (fonte, não se edita). Foi
+> desdobrado em `specs/steering/`, `specs/capability-map.md` e nas mudanças em `specs/changes/`.
+> O modelo de dados e os requisitos RF-05 e RF-11 daqui entram nas specs de `registros` e `destaques`.
 
 **Status:** Draft — aguardando revisão do proprietário do produto
 **Objetivo:** aplicativo web instalável (PWA) para duas pessoas compartilharem escrita diária, fotos de textos manuscritos, trechos selecionados e comentários contextuais.

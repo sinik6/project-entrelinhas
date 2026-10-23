@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Entrelinhas API
+  version: 0.1.0
+  description: >
+    Contrato escrito à mão na mudança 001. Quando houver a primeira API de domínio, o contrato passa a ser
+    gerado do código (decisão registrada em ADR) e este arquivo é arquivado.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Verificação de saúde (pública)
+      security: []
+      responses:
+        "200":
+          description: API e banco respondem
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, versao]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  versao:
+                    type: string
+                    example: 0.1.0
+        "500":
+          description: o banco não aceitou a consulta
