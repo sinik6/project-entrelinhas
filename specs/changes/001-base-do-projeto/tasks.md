@@ -59,10 +59,10 @@ Tracker externo: nenhum.
 - [x] T-3.1 Código enviado ao GitHub (`sinik6/project-entrelinhas`, `main`) (XS)
   - Req: REQ-3.1
   - Verifica: `git log origin/main`
-- [ ] T-3.2 Ambiente `production` (variáveis e segredos) e chave SSH nova na VPS, feitos por quem é admin (S)
+- [x] T-3.2 Ambiente `production` (variáveis e segredos) e chave SSH nova na VPS, feitos por quem é admin (S)
   - Req: CTL-7, ABU-2
   - Verifica: Deploy não aborta por segredo ausente; `authorized_keys` com a linha do projeto
-- [ ] T-3.3 Primeiro deploy executado e conferido por domínio e IP (S)
+- [x] T-3.3 Primeiro deploy executado e conferido por domínio e IP (S)
   - Req: REQ-3.1, REQ-3.2, REQ-3.3, REQ-3.4
   - Verifica: `curl -I https://jpsys.duckdns.org/entrelinhas/admin/login/` → 200; `curl -I http://217.216.82.25/entrelinhas/admin/login/` → redirecionamento para https
 

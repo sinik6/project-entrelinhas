@@ -19,10 +19,10 @@ commit base `d511cbc`, mais as alterações desta reestruturação ainda sem com
 | REQ-1.1 | `test_req_1_1_health_responde_ok_sem_login` (integração) | ✔ passou |
 | REQ-1.2 | `test_req_1_2_health_falha_quando_banco_nao_responde` (consulta forçada a falhar) | ✔ passou |
 | REQ-2.1 | `test_req_2_1_producao_recusa_subir_sem_secret_key` (processo isolado) | ✔ passou |
-| REQ-3.1 | CI escrito em `.github/workflows/ci.yml`; execução no GitHub **não conferida** | pendente |
-| REQ-3.2 | `deploy.yml` escrito; deploy **não executado** | pendente |
-| REQ-3.3 | conferência pública está em `deploy.sh`; **não executado** | pendente |
-| REQ-3.4 | idem | pendente |
+| REQ-3.1 | CI e deploy rodaram no GitHub; o usuário informou que o workflow terminou verde (2026-10-28). Log não lido pelo agente | ✔ informado pelo usuário |
+| REQ-3.2 | workflow de deploy executado pelo usuário (verde, informado); o Admin passou a responder 200 depois dele (404 antes) | ✔ |
+| REQ-3.3 | `curl` do agente em 2026-10-28: `https://jpsys.duckdns.org/entrelinhas/admin/login/` → 200 (certificado válido) e `https://217.216.82.25/entrelinhas/admin/login/` → 200 | ✔ |
+| REQ-3.4 | `curl http://217.216.82.25/entrelinhas/admin/login/` → 301 para `https://217.216.82.25/entrelinhas/admin/login/` | ✔ |
 | REQ-3.5 | `test_req_3_5_backup_antes_das_migracoes` (lê o script como texto) | ✔ passou (texto) |
 | REQ-3.6 | `test_req_3_6_guarda_so_os_10_backups_mais_novos` (texto) | ✔ passou (texto) |
 | REQ-4.1 | `docker compose config` válido; `docker compose up --build` **não executado** | pendente |
@@ -49,7 +49,8 @@ commit base `d511cbc`, mais as alterações desta reestruturação ainda sem com
 Ainda não feita (T-4.2).
 
 ## Não verificado
-- Execução do CI no GitHub e do deploy na VPS (REQ-3.1 a REQ-3.4), incluindo o certificado do domínio.
+- O log do CI e do deploy não foi lido pelo agente (sem acesso ao GitHub); o "verde" vem do usuário. Backup e migrações na VPS (REQ-3.5, REQ-3.6) não foram vistos: sem acesso SSH.
+- CTL-4 e CTL-7 não conferidos na VPS.
 - `docker compose up --build` completo (REQ-4.1).
 - Os testes marcados "texto" provam que a regra está escrita, não que a VPS a cumpre.
 - `PROP-1` foi visto passando, mas não foi visto falhando com uma rota pública fora da lista (sem mutação).

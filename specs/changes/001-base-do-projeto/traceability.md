@@ -5,10 +5,10 @@
 | REQ-1.1 | health responde ok sem login | T-1.1 | `test_req_1_1_health_responde_ok_sem_login` | ✔ |
 | REQ-1.2 | health falha se o banco não responde | T-1.1 | `test_req_1_2_health_falha_quando_banco_nao_responde` | ✔ |
 | REQ-2.1 | produção recusa subir sem chave secreta | T-1.2 | `test_req_2_1_producao_recusa_subir_sem_secret_key` | ✔ |
-| REQ-3.1 | CI roda lint, checagens, testes e build | T-2.1, T-3.1, T-3.3 | primeira execução do CI | planejado |
-| REQ-3.2 | commit aprovado é publicado na VPS | T-2.4, T-3.3 | primeiro deploy | planejado |
-| REQ-3.3 | Admin responde por HTTPS (domínio e IP) | T-2.2, T-3.3 | `curl` após o deploy | planejado |
-| REQ-3.4 | HTTP redireciona para HTTPS | T-2.2, T-3.3 | `curl` após o deploy | planejado |
+| REQ-3.1 | CI roda lint, checagens, testes e build | T-2.1, T-3.1, T-3.3 | CI verde (informado pelo usuário) | ✔ |
+| REQ-3.2 | commit aprovado é publicado na VPS | T-2.4, T-3.3 | primeiro deploy; Admin respondeu 200 | ✔ |
+| REQ-3.3 | Admin responde por HTTPS (domínio e IP) | T-2.2, T-3.3 | `curl` 200 por domínio e IP | ✔ |
+| REQ-3.4 | HTTP redireciona para HTTPS | T-2.2, T-3.3 | `curl` HTTP → 301 para https | ✔ |
 | REQ-3.5 | backup antes das migrações | T-2.3, T-2.5 | `test_req_3_5_backup_antes_das_migracoes` | ✔ (texto) |
 | REQ-3.6 | guarda só 10 backups | T-2.3, T-2.5 | `test_req_3_6_guarda_so_os_10_backups_mais_novos` | ✔ (texto) |
 | REQ-4.1 | ambiente local em localhost:8010 | T-1.4, T-1.5 | `docker compose up --build` + `curl` | planejado |
