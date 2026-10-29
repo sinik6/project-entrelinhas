@@ -68,6 +68,25 @@ services:
       traefik.http.routers.entrelinhas-admin-ip.priority: '200'
       traefik.http.routers.entrelinhas-admin-ip.middlewares: secure-headers@file
       traefik.http.routers.entrelinhas-admin-ip.service: entrelinhas-api
+      # Limite de tentativas de senha no login do Admin (spec 002, ABU-4): só o POST do formulário,
+      # 5 por minuto por endereço (resposta 429 depois). Um roteador próprio, mais prioritário que o
+      # do Admin, para não limitar os estáticos nem a navegação.
+      traefik.http.middlewares.entrelinhas-login-limite.ratelimit.average: '5'
+      traefik.http.middlewares.entrelinhas-login-limite.ratelimit.period: 1m
+      traefik.http.middlewares.entrelinhas-login-limite.ratelimit.burst: '5'
+      traefik.http.routers.entrelinhas-login-duckdns.rule: Host(`jpsys.duckdns.org`) && Method(`POST`) && Path(`/entrelinhas/admin/login/`)
+      traefik.http.routers.entrelinhas-login-duckdns.entrypoints: websecure
+      traefik.http.routers.entrelinhas-login-duckdns.tls: 'true'
+      traefik.http.routers.entrelinhas-login-duckdns.tls.certresolver: duckdns
+      traefik.http.routers.entrelinhas-login-duckdns.priority: '300'
+      traefik.http.routers.entrelinhas-login-duckdns.middlewares: entrelinhas-login-limite@docker,secure-headers@file
+      traefik.http.routers.entrelinhas-login-duckdns.service: entrelinhas-api
+      traefik.http.routers.entrelinhas-login-ip.rule: Host(`217.216.82.25`) && Method(`POST`) && Path(`/entrelinhas/admin/login/`)
+      traefik.http.routers.entrelinhas-login-ip.entrypoints: websecure
+      traefik.http.routers.entrelinhas-login-ip.tls: 'true'
+      traefik.http.routers.entrelinhas-login-ip.priority: '300'
+      traefik.http.routers.entrelinhas-login-ip.middlewares: entrelinhas-login-limite@docker,secure-headers@file
+      traefik.http.routers.entrelinhas-login-ip.service: entrelinhas-api
       # HTTP → HTTPS do Admin, pelo middleware central.
       traefik.http.routers.entrelinhas-http.rule: PathPrefix(`/entrelinhas/`)
       traefik.http.routers.entrelinhas-http.entrypoints: web

@@ -16,7 +16,7 @@
   parceiro e confere que o texto escondido não aparece em nenhum ponto da resposta (Art. 12).
 - Todo recurso novo: teste de acesso cruzado (outro espaço recebe 404).
 - Mocks só na fronteira externa.
-- Suíte rápida (hoje 11 casos, ~2 s); flaky é bug.
+- Suíte rápida (hoje 35 casos, ~1 s); flaky é bug.
 
 ## Definição de pronto
 Testes da tarefa vistos falhando e depois passando; suíte afetada verde; lint limpo; `sdd_lint.py` sem erro;

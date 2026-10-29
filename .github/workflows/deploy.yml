@@ -71,6 +71,7 @@ jobs:
         env:
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          SENHA_ADMIN_INICIAL: ${{ secrets.SENHA_ADMIN_INICIAL }}
         run: |
           umask 077
           # vars do GitHub → KEY=VALUE (menos as de infraestrutura do CI)
@@ -82,7 +83,7 @@ jobs:
           echo "APP_NAME=$APP_NAME" >> /tmp/.env.production
 
           # segredos (não iteráveis): obrigatórios e sem quebra de linha
-          for nome in DJANGO_SECRET_KEY POSTGRES_PASSWORD; do
+          for nome in DJANGO_SECRET_KEY POSTGRES_PASSWORD SENHA_ADMIN_INICIAL; do
             valor="${!nome}"
             if [ -z "$valor" ]; then echo "Segredo $nome não configurado no ambiente production" >&2; exit 1; fi
             if [[ "$valor" == *$'\n'* || "$valor" == *$'\r'* ]]; then echo "Segredo $nome tem quebra de linha" >&2; exit 1; fi

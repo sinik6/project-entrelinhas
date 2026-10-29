@@ -12,6 +12,7 @@ test -s .env.production
 dc() {
     docker compose -f docker-compose.deploy.yml --env-file .env.production "$@"
 }
+valor() { grep -m1 "^$1=" .env.production | cut -d= -f2- | tr -d '\r' || true; }
 
 # O traefikproxy publica o sistema (rede traefik_proxy). Sem ela o compose falharia no meio,
 # com a API já parada.
@@ -40,6 +41,15 @@ fi
 echo "=== Migrations"
 dc up -d --wait db
 dc run --rm --no-deps entrelinhas-api python manage.py migrate --noinput
+
+echo "=== Administrador inicial"
+# Nome, e-mail e senha vão só a esta execução (spec 002): nunca ao serviço da API em execução, e o
+# comando não escreve a senha. Recusa (senha ausente ou fraca, usuário comum com o mesmo nome) falha
+# o deploy com a API parada, por causa do `set -e`.
+ADMIN_USUARIO="$(valor ADMIN_USUARIO)" ADMIN_EMAIL="$(valor ADMIN_EMAIL)" \
+SENHA_ADMIN_INICIAL="$(valor SENHA_ADMIN_INICIAL)" \
+    dc run --rm --no-deps -e SENHA_ADMIN_INICIAL -e ADMIN_USUARIO -e ADMIN_EMAIL \
+    entrelinhas-api python manage.py administrador_inicial
 
 echo "=== Subindo o sistema"
 dc up -d --wait --remove-orphans

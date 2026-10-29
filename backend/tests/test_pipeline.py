@@ -58,3 +58,34 @@ def test_req_3_5_backup_antes_das_migracoes():
 def test_req_3_6_guarda_so_os_10_backups_mais_novos():
     """REQ-3.6: o script remove do 11º backup em diante."""
     assert "tail -n +11" in DEPLOY_SH
+
+
+COMPOSE_DEPLOY = (RAIZ / "docker-compose.deploy.yml").read_text(encoding="utf-8")
+
+
+def test_req_2_4_administrador_entre_migrate_e_subida():
+    """REQ-2.4: o administrador é criado depois das migrações e antes de subir a API."""
+    migra = DEPLOY_SH.index("manage.py migrate")
+    admin = DEPLOY_SH.index("manage.py administrador_inicial")
+    sobe = DEPLOY_SH.index("=== Subindo o sistema")
+
+    assert migra < admin < sobe
+    assert "set -euo pipefail" in DEPLOY_SH
+
+
+def test_ctl_4_senha_nao_entra_no_compose_nem_no_servico_da_api():
+    """CTL-4 / NFR-SEC-1: a senha só vai ao `run --rm` do comando, nunca ao serviço."""
+    assert "SENHA_ADMIN_INICIAL" not in COMPOSE_DEPLOY
+    assert "dc run --rm --no-deps -e SENHA_ADMIN_INICIAL" in DEPLOY_SH
+    assert "SENHA_ADMIN_INICIAL" in DEPLOY_YML
+
+
+def test_abu_4_login_do_admin_tem_limite_de_5_por_minuto():
+    """ABU-4 / CTL-6: POST no login do Admin passa por limite de 5 por minuto, no domínio e no IP."""
+    assert "entrelinhas-login-limite.ratelimit.average: '5'" in COMPOSE_DEPLOY
+    assert "entrelinhas-login-limite.ratelimit.period: 1m" in COMPOSE_DEPLOY
+    assert "entrelinhas-login-limite.ratelimit.burst: '5'" in COMPOSE_DEPLOY
+    for roteador in ("entrelinhas-login-duckdns", "entrelinhas-login-ip"):
+        assert f"routers.{roteador}.rule:" in COMPOSE_DEPLOY
+        assert f"routers.{roteador}.middlewares: entrelinhas-login-limite@docker" in COMPOSE_DEPLOY
+    assert COMPOSE_DEPLOY.count("Method(`POST`) && Path(`/entrelinhas/admin/login/`)") == 2

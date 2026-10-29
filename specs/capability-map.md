@@ -27,14 +27,15 @@ Regras:
 ## Mudanças planejadas (uma P2 por módulo, na ordem do mapa)
 | Mudança | Módulo | Tarefas da origem | Estado |
 |---|---|---|---|
-| 001-base-do-projeto | base | T0101, T0102, T0103 | em andamento |
-| 002 (a abrir) | acesso-espaco | T0201, T0202 | planejada |
-| 003 (a abrir) | registros — backend | T0301, T0302, T0303 | planejada |
-| 004 (a abrir) | registros — front (cria `frontend/`) | T0304 | planejada |
-| 005 (a abrir) | destaques — backend | T0401, T0402 | planejada |
-| 006 (a abrir) | destaques — front | T0403 | planejada |
-| 007 (a abrir) | fotos-lembretes — fotos | T0501 | planejada |
-| 008 (a abrir) | fotos-lembretes — PWA e push | T0502 | planejada |
+| 001-base-do-projeto | base | T0101, T0102, T0103 | em andamento (falta T-1.5 e arquivar) |
+| 002-administrador-inicial | base | — (pedido do dono em 2026-10-28) | em revisão (G1) |
+| 003 (a abrir) | acesso-espaco | T0201, T0202 | planejada |
+| 004 (a abrir) | registros — backend | T0301, T0302, T0303 | planejada |
+| 005 (a abrir) | registros — front (cria `frontend/`) | T0304 | planejada |
+| 006 (a abrir) | destaques — backend | T0401, T0402 | planejada |
+| 007 (a abrir) | destaques — front | T0403 | planejada |
+| 008 (a abrir) | fotos-lembretes — fotos | T0501 | planejada |
+| 009 (a abrir) | fotos-lembretes — PWA e push | T0502 | planejada |
 
 ## Decisões em aberto por módulo
 Cada uma vira esclarecimento (com opções e recomendação) na spec da mudança indicada, antes do design.
@@ -47,4 +48,4 @@ Cada uma vira esclarecimento (com opções e recomendação) na spec da mudança
 | fotos-lembretes | Fotos no SILO da VPS (padrão do Vinculus) ou em volume? Tamanho e tipos aceitos. Foto visível em registro `partial`? Texto do lembrete e regra de não enviar se o dia já foi entregue. |
 
 Risco: decidir a unidade dos offsets só depois de haver dados corrompe trechos e destaques; fica como
-pré-requisito da mudança 003.
+pré-requisito da mudança 004.
