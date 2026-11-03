@@ -72,22 +72,42 @@ jobs:
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SENHA_ADMIN_INICIAL: ${{ secrets.SENHA_ADMIN_INICIAL }}
+          VARS_JSON: ${{ toJSON(vars) }}
         run: |
           umask 077
-          # vars do GitHub → KEY=VALUE (menos as de infraestrutura do CI)
-          echo '${{ toJSON(vars) }}' | jq -r '
+          # Valores com aspas simples: o Compose não interpola `$` nem trata `#` como comentário, então
+          # nenhum pedaço de senha vira aviso no log. Por isso, valor com aspa simples é recusado.
+          # Variable com nome de segredo é erro: ela prevaleceria (ou confundiria) sobre o segredo.
+          if printf '%s' "$VARS_JSON" | jq -e 'keys | any(test("^(DJANGO_SECRET_KEY|POSTGRES_PASSWORD|SENHA_ADMIN_INICIAL)$"))' >/dev/null; then
+            echo "Há uma variable com nome de segredo no ambiente production: apague-a (segredo é só em Secrets)" >&2; exit 1
+          fi
+          if printf '%s' "$VARS_JSON" | jq -e --arg q "'" 'to_entries | any(.value | contains($q))' >/dev/null; then
+            echo "Uma variable do ambiente production contém aspa simples: remova a aspa" >&2; exit 1
+          fi
+          if printf '%s' "$VARS_JSON" | jq -e 'to_entries | any(.value | test("[\r\n]"))' >/dev/null; then
+            echo "Uma variable do ambiente production contém quebra de linha: remova-a" >&2; exit 1
+          fi
+          # vars do GitHub → NOME='valor' (menos as de infraestrutura do CI)
+          printf '%s' "$VARS_JSON" | jq -r --arg q "'" '
             to_entries
             | map(select(.key | test("^(DEPLOY_HOST|DEPLOY_USER)$") | not))
-            | .[] | "\(.key)=\(.value)"
+            | .[] | "\(.key)=\($q)\(.value)\($q)"
           ' > /tmp/.env.production
-          echo "APP_NAME=$APP_NAME" >> /tmp/.env.production
+          printf "APP_NAME='%s'\n" "$APP_NAME" >> /tmp/.env.production
 
-          # segredos (não iteráveis): obrigatórios e sem quebra de linha
+          # segredos (não iteráveis): obrigatórios, sem quebra de linha e sem aspa simples
           for nome in DJANGO_SECRET_KEY POSTGRES_PASSWORD SENHA_ADMIN_INICIAL; do
             valor="${!nome}"
             if [ -z "$valor" ]; then echo "Segredo $nome não configurado no ambiente production" >&2; exit 1; fi
             if [[ "$valor" == *$'\n'* || "$valor" == *$'\r'* ]]; then echo "Segredo $nome tem quebra de linha" >&2; exit 1; fi
-            printf '%s=%s\n' "$nome" "$valor" >> /tmp/.env.production
+            if [[ "$valor" == *"'"* ]]; then echo "Segredo $nome contém aspa simples: gere outro valor sem aspa" >&2; exit 1; fi
+            # Antes da spec 002 o arquivo não tinha aspas e o Compose "mastigava" cifrão e espaço seguido de
+            # cerquilha. Se a senha do banco tinha isso, o Postgres já a guardou mastigada: aspas simples
+            # passariam o valor cru e a API deixaria de autenticar. Falha aqui, antes de tocar na VPS.
+            if [ "$nome" = POSTGRES_PASSWORD ] && [[ "$valor" == *'$'* || "$valor" == *' #'* ]]; then
+              echo "POSTGRES_PASSWORD contém cifrão ou espaço seguido de cerquilha: o valor efetivo mudaria com as aspas simples. Troque a senha do banco antes (ver spec 002, design, seção 15)" >&2; exit 1
+            fi
+            printf "%s='%s'\n" "$nome" "$valor" >> /tmp/.env.production
           done
 
           scp -i ~/.ssh/deploy_key /tmp/.env.production \

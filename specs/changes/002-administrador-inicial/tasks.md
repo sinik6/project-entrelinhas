@@ -61,6 +61,74 @@ Tracker externo: nenhum.
   - Req: todos
   - Verifica: validation.md sem placeholders e com veredito
 
+## Onda 5 — Correções da auditoria independente (2026-11-03)
+Origem: `auditoria-independente.md`. Decisões de spec tomadas pelo agente por delegação do dono (ver `requirements.md`, esclarecimentos).
+- [x] T-5.1 A1: `.env.production` com aspas simples, `valor()` tira as aspas e recusa-se aspa no valor (S)
+  - Req: CTL-8, NFR-SEC-1
+  - Arquivos: `.github/workflows/deploy.yml`, `infra/deploy.sh`, `backend/tests/test_pipeline.py`
+  - Verifica: `pytest tests/test_pipeline.py -k ctl_8`; bloco real do workflow executado com `jq`; `docker compose config` sem aviso
+- [x] T-5.2 A2: testes qualificados por mudança (`[001]`/`[002]`) e CTL-2 citado nas docstrings (XS)
+  - Req: CTL-2
+  - Arquivos: `backend/tests/test_pipeline.py`, `backend/apps/common/tests/test_administrador_inicial.py`
+  - Verifica: `sdd_lint.py . --code backend` sem erro
+- [x] T-5.3 M1: testes do mínimo de 12, senha comum, senha parecida e senha de 12 aceita (S)
+  - Req: REQ-2.2, PROP-2
+  - Arquivos: `backend/apps/common/tests/test_administrador_inicial.py`
+  - Verifica: `pytest -k req_2_2`
+- [x] T-5.4 M2: ABU-4 reescrito com a semântica real do balde, e medido no ar (XS)
+  - Req: ABU-4, CTL-6
+  - Arquivos: `specs/changes/002-administrador-inicial/requirements.md`
+  - Verifica: 7 `POST` no domínio (5 passam, 2 recusados), depois 3 no IP aceitos (balde próprio)
+- [x] T-5.5 M3: `administrador_inicial --verificar` antes de parar a API (M)
+  - Req: REQ-2.5, CTL-10
+  - Arquivos: `backend/apps/common/services.py`, `backend/apps/common/management/commands/administrador_inicial.py`, `infra/deploy.sh`
+  - Verifica: `pytest -k "req_2_5"`
+- [x] T-5.6 M4 e M5: `VARS_JSON` por `env`, recusa de variable com nome de segredo, última ocorrência vale (S)
+  - Req: CTL-9
+  - Arquivos: `.github/workflows/deploy.yml`, `infra/deploy.sh`
+  - Verifica: `pytest -k ctl_9`; os 4 casos do bloco do workflow executados com `jq`
+- [x] T-5.7 B1, B2 e B5: teste da corrida, teste do hasher de produção, validação de nome e e-mail (S)
+  - Req: PROP-1, NFR-SEC-2, REQ-2.3
+  - Arquivos: `backend/apps/common/services.py`, `backend/tests/test_configuracao.py`, `backend/apps/common/tests/test_administrador_inicial.py`
+  - Verifica: `pytest -k "corrida or hasher or invalido"`
+- [x] T-5.8 Segunda verificação independente, por agente específico, sobre as correções (S)
+  - Req: todos
+  - Verifica: relatório `auditoria-independente-2.md` entregue (veredito: apto com ressalvas; 2 ALTA, 7 MÉDIA, 8 BAIXA). Os achados foram tratados na onda 6
+
+## Onda 6 — Correções da 2ª auditoria independente (2026-11-03)
+Origem: `auditoria-independente-2.md`.
+- [x] T-6.1 ALTA-1: testes que detectam as mutações de infra: `deploy.sh` executado com `docker` falso, bloco do workflow executado com `jq`, `env_file`, `|| true`, argv, prioridade e demais rótulos do login (L)
+  - Req: CTL-4, CTL-8, CTL-9, CTL-10, REQ-2.4, REQ-2.5, NFR-SEC-1, ABU-4, CTL-6
+  - Arquivos: `backend/tests/test_deploy_script.py`, `backend/tests/test_workflow_env.py`, `backend/tests/test_pipeline.py`
+  - Verifica: `pytest tests/` local (bash do Git) e num contêiner Linux com `jq`; as mutações da auditoria rodadas contra os testes novos
+- [x] T-6.2 MÉDIA-1: o contêiner de `run` sai com `-l traefik.enable=false`, para não entrar no balanceador (XS)
+  - Req: CTL-10
+  - Arquivos: `infra/deploy.sh`
+  - Verifica: `test_ctl_10_todo_run_do_deploy_desliga_os_rotulos_do_traefik`, `test_req_2_5_todo_run_do_deploy_sai_sem_rotulos_do_traefik`
+- [x] T-6.3 MÉDIA-3: testes renomeados para `test_ctl_8_*` e `test_ctl_9_*`; citações dos documentos conferidas (XS)
+  - Req: CTL-8, CTL-9
+  - Verifica: `pytest -k ctl_8` e `-k ctl_9` selecionam testes
+- [x] T-6.4 MÉDIA-4: o workflow recusa `POSTGRES_PASSWORD` com cifrão ou espaço seguido de cerquilha, antes de tocar na VPS (XS)
+  - Req: CTL-8
+  - Arquivos: `.github/workflows/deploy.yml`
+  - Verifica: `test_ctl_8_senha_do_banco_que_mudaria_com_as_aspas_derruba_o_passo`
+- [x] T-6.5 MÉDIA-6: ABU-1 provado em todos os caminhos de erro, com `capsys` (S)
+  - Req: ABU-1, NFR-SEC-1
+  - Arquivos: `backend/apps/common/tests/test_administrador_inicial.py`
+  - Verifica: `pytest -k abu_1`
+- [x] T-6.6 BAIXAS: normalização NFKC, nome sem distinção de caixa, aviso de superusuário inativo, variables sem quebra de linha, ABU-4 reescrito, hasher real de produção (S)
+  - Req: REQ-1.2, ABU-2, REQ-1.4, CTL-9, ABU-4, NFR-SEC-2
+  - Arquivos: `backend/apps/common/services.py`, `backend/apps/common/management/commands/administrador_inicial.py`, `.github/workflows/deploy.yml`, `backend/tests/test_configuracao.py`
+  - Verifica: `pytest -k "unicode or caixa or inativo or hasher or quebra"`
+- [x] T-6.7 MÉDIA-5: `validation.md`, `traceability.md` e `design.md` atualizados com o que foi de fato executado (S)
+  - Req: todos
+  - Verifica: `sdd_lint.py . --code backend` sem erro
+- [ ] T-6.8 Ratificação do usuário: riscos aceitos pelo agente (`threat-model.md`), decisões de spec desta onda e revisão de CI, deploy e Traefik (XS, do usuário)
+  - Req: todos
+  - Verifica: o usuário confirma ou corrige cada linha de "Riscos aceitos"
+
 ## Revisão do usuário
-- [ ] Criar `ADMIN_USUARIO`, `ADMIN_EMAIL` e `SENHA_ADMIN_INICIAL` no ambiente `production` antes do push da T-3.2 (sem isso o deploy aborta, e é o comportamento previsto).
-- [ ] Conferir no navegador que o login do Admin funciona com a conta criada.
+- [x] Criar `ADMIN_USUARIO`, `ADMIN_EMAIL` e `SENHA_ADMIN_INICIAL` no ambiente `production` antes do push da T-3.2 (feito em 2026-10-28).
+- [x] Conferir no navegador que o login do Admin funciona com a conta criada (feito em 2026-11-03).
+- [ ] Confirmar que o `POSTGRES_PASSWORD` do ambiente `production` não tem cifrão nem espaço seguido de cerquilha (o workflow passa a recusar; ver T-6.4).
+- [ ] Ratificar os riscos aceitos pelo agente (T-6.8).

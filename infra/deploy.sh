@@ -12,7 +12,18 @@ test -s .env.production
 dc() {
     docker compose -f docker-compose.deploy.yml --env-file .env.production "$@"
 }
-valor() { grep -m1 "^$1=" .env.production | cut -d= -f2- | tr -d '\r' || true; }
+# Lê um valor do .env.production: vale a última ocorrência (os segredos são gravados depois das variables)
+# e as aspas simples que o workflow põe em volta do valor são tiradas. O arquivo usa aspas simples para o
+# Compose não interpolar `$` nem tratar `#` como comentário (um pedaço da senha apareceria em aviso no log).
+valor() { grep "^$1=" .env.production | tail -n 1 | cut -d= -f2- | tr -d '\r' | sed -e "s/^'//" -e "s/'\$//" || true; }
+
+# Nome, e-mail e senha do administrador vão só à execução do comando (spec 002): nunca ao serviço da API.
+admin_inicial() {
+    ADMIN_USUARIO="$(valor ADMIN_USUARIO)" ADMIN_EMAIL="$(valor ADMIN_EMAIL)" \
+    SENHA_ADMIN_INICIAL="$(valor SENHA_ADMIN_INICIAL)" \
+        dc run --rm --no-deps -l traefik.enable=false -e SENHA_ADMIN_INICIAL -e ADMIN_USUARIO -e ADMIN_EMAIL \
+        entrelinhas-api python manage.py administrador_inicial "$@"
+}
 
 # O traefikproxy publica o sistema (rede traefik_proxy). Sem ela o compose falharia no meio,
 # com a API já parada.
@@ -29,6 +40,11 @@ stamp=$(date -u +%Y%m%dT%H%M%SZ)
 echo "=== Construindo a imagem"
 dc build
 
+echo "=== Conferindo a configuração do administrador"
+# Antes de parar a API (spec 002, REQ-2.5): senha ausente, curta ou comum aborta aqui, com o Admin ainda
+# no ar. A conferência não usa o banco; a criação da conta vem depois, em "Administrador inicial".
+admin_inicial --verificar
+
 echo "=== Congelando a escrita e fazendo backup"
 dc stop entrelinhas-api >/dev/null 2>&1 || true
 if dc ps --status running --services | grep -qx db; then
@@ -40,16 +56,12 @@ fi
 
 echo "=== Migrations"
 dc up -d --wait db
-dc run --rm --no-deps entrelinhas-api python manage.py migrate --noinput
+dc run --rm --no-deps -l traefik.enable=false entrelinhas-api python manage.py migrate --noinput
 
 echo "=== Administrador inicial"
-# Nome, e-mail e senha vão só a esta execução (spec 002): nunca ao serviço da API em execução, e o
-# comando não escreve a senha. Recusa (senha ausente ou fraca, usuário comum com o mesmo nome) falha
-# o deploy com a API parada, por causa do `set -e`.
-ADMIN_USUARIO="$(valor ADMIN_USUARIO)" ADMIN_EMAIL="$(valor ADMIN_EMAIL)" \
-SENHA_ADMIN_INICIAL="$(valor SENHA_ADMIN_INICIAL)" \
-    dc run --rm --no-deps -e SENHA_ADMIN_INICIAL -e ADMIN_USUARIO -e ADMIN_EMAIL \
-    entrelinhas-api python manage.py administrador_inicial
+# O comando não escreve a senha. Uma recusa que só aparece aqui (usuário comum com o mesmo nome) falha o
+# deploy com a API já parada, por causa do `set -e`; senha ausente ou fraca já foi barrada acima.
+admin_inicial
 
 echo "=== Subindo o sistema"
 dc up -d --wait --remove-orphans
