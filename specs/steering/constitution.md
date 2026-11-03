@@ -1,7 +1,7 @@
 ---
-versao: 1.0.0
+versao: 1.1.0
 ratificada: 2026-10-23
-ultima_emenda: 2026-10-23
+ultima_emenda: 2026-11-03
 ---
 
 # Constituição — Entrelinhas
@@ -30,7 +30,7 @@ Usar o framework diretamente (ORM do Django, DRF, Server Components); uma repres
 Toda regra validada no front existe no backend com teste de API (422).
 
 ## Art. 7 — Segurança por padrão
-Deny-by-default; autorização por objeto e por espaço no servidor; ASVS L2; threat model para risco médio/alto.
+Deny-by-default; autorização por objeto e por grupo no servidor; ASVS L2; threat model para risco médio/alto.
 
 ## Art. 8 — Contratos explícitos
 APIs descritas em OpenAPI versionado em `specs/changes/<id>/contracts/` e, depois de arquivada a
@@ -50,8 +50,14 @@ Texto de registro `private`, ou a parte de um registro `partial` fora do trecho 
 resposta HTTP do Django. Esconder no front não conta. Todo endpoint que devolve texto de registro tem
 teste de API provando que o texto escondido não aparece.
 
-## Art. 13 — Espaço de exatamente duas pessoas
-Um espaço nunca passa de 2 membros, garantido no backend. Recurso de outro espaço responde 404, nunca 403.
+## Art. 13 — Grupo de escrita de até duas pessoas no MVP
+No MVP, um grupo de escrita nunca passa de 2 membros, garantido no backend; o limite é atributo do grupo, não
+número fixo no código. Grupos de estudo e de leitura ficam fora do MVP. Recurso de outro grupo responde 404,
+nunca 403.
+
+Emenda 1.1.0 (2026-11-03): troca "espaço de exatamente duas pessoas" por "grupo de escrita de até duas
+pessoas no MVP", para os grupos de estudo e de leitura caberem depois sem refazer o banco. O limite de 2 continua
+valendo para o MVP; nenhuma spec existente muda.
 
 ## Fronteiras do agente
 | Sempre | Perguntar antes | Nunca |

@@ -19,8 +19,8 @@ Expiração, bloqueio por tentativas e recuperação de conta ficam para a mudan
 
 ## Autorização
 Deny-by-default: permissão padrão `IsAuthenticated`; rota pública declara `AllowAny` e entra na lista
-de públicas verificada por teste. Autorização por espaço e por visibilidade no servidor; recurso de outro
-espaço responde 404.
+de públicas verificada por teste. Autorização por grupo e por visibilidade no servidor; recurso de outro
+grupo responde 404.
 
 ## Segredos
 Variáveis de ambiente e segredos do ambiente `production` do GitHub; `.env.production` é gerado na VPS

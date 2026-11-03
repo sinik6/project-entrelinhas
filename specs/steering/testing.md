@@ -14,7 +14,7 @@
 - ID da spec no nome do teste (`test_req_1_3_…`) ou na docstring (`REQ-1.3`); o `sdd_lint --code backend` confere.
 - Todo endpoint que devolve texto de registro: teste que cria registro `private` e `partial`, lê como
   parceiro e confere que o texto escondido não aparece em nenhum ponto da resposta (Art. 12).
-- Todo recurso novo: teste de acesso cruzado (outro espaço recebe 404).
+- Todo recurso novo: teste de acesso cruzado (outro grupo recebe 404).
 - Mocks só na fronteira externa.
 - Suíte rápida (hoje 35 casos, ~1 s); flaky é bug.
 
