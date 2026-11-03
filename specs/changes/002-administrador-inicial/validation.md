@@ -6,8 +6,8 @@ veredito: parcial
 
 # Validação — Administrador inicial criado pelo deploy
 
-Evidência do que foi **realmente executado**. A mudança está no ar, mas continua aberta: falta o dono confirmar o
-login no Admin, falta ver um deploy repetido deixar a conta como está, e a verificação independente não foi feita.
+Evidência do que foi **realmente executado**. A mudança está no ar, mas continua aberta: falta ver um deploy repetido
+deixar a conta como está, e a verificação independente não foi feita.
 
 ## Ambiente
 Testes: máquina local (Windows), PostgreSQL 17 descartável em porta 55433 · commit `5fe8e66`.
@@ -18,7 +18,7 @@ Produção: `https://jpsys.duckdns.org/entrelinhas` na VPS, conferida por `curl`
 |---|---|---|
 | REQ-1.1 | `test_req_1_1_cria_superusuario_quando_nao_existe`; no ar, o deploy com a senha corrigida terminou verde (informado pelo usuário) e o Admin voltou a responder 200 | ✔ (a conta em si não foi vista; ver REQ-1.3) |
 | REQ-1.2 | `test_req_1_2_usuario_existente_nao_muda`, `test_prop_1_…` (2 e 5 execuções) | ✔ em teste; **não visto no ar** (precisa de um segundo deploy com a conta já criada) |
-| REQ-1.3 | `test_req_1_3_conta_criada_entra_no_admin` (login pelo cliente de teste, 302 e depois 200 no painel) | ✔ em teste; **login real no navegador pendente do dono** |
+| REQ-1.3 | `test_req_1_3_conta_criada_entra_no_admin` (login pelo cliente de teste, 302 e depois 200 no painel) | ✔ em teste e no ar (o dono entrou no Admin com a conta criada, informado em 2026-11-03) |
 | REQ-2.1 | `test_req_2_1_sem_senha_recusa_e_nao_cria` (sem senha e senha vazia) | ✔ |
 | REQ-2.2 | `test_req_2_2_senha_fraca_recusa_e_nao_cria` (curta, só números, parecida com o usuário); **no ar**: o 1º deploy parou com `Senha recusada pela política de senhas: … pelo menos 12 caracteres` | ✔ em teste e no ar |
 | REQ-2.3 | `test_req_2_3_sem_usuario_ou_email_recusa` (4 casos) | ✔ |
@@ -49,7 +49,6 @@ Produção: `https://jpsys.duckdns.org/entrelinhas` na VPS, conferida por `curl`
 escreveu e testou foi o mesmo agente.
 
 ## Não verificado
-- Login real do dono no Admin com a conta criada (REQ-1.3 no ar).
 - Segundo deploy com a conta já existente: a saída esperada é `Administrador já existe: <usuário>` (REQ-1.2 no ar).
 - O 429 foi testado a partir de um único endereço de origem; não foi testado com vários.
 - THR-5 (senha em texto no `.env.production`, modo 600) é risco aceito pelo dono em 2026-10-28, sem mitigação técnica.

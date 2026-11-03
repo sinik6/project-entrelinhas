@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | REQ-1.1 | cria o superusuário quando não existe | T-1.1, T-2.2, T-3.1 | `test_req_1_1_cria_superusuario_quando_nao_existe` | ✔ |
 | REQ-1.2 | usuário existente não muda | T-1.1, T-2.2 | `test_req_1_2_usuario_existente_nao_muda` | ✔ |
-| REQ-1.3 | conta criada entra no Admin | T-1.1, T-2.2, T-3.2 | `test_req_1_3_conta_criada_entra_no_admin`; login do usuário | ✔ |
+| REQ-1.3 | conta criada entra no Admin | T-1.1, T-2.2, T-3.2 | `test_req_1_3_conta_criada_entra_no_admin`; login do dono no ar | ✔ em teste e no ar |
 | REQ-2.1 | sem senha, recusa | T-1.1, T-2.2 | `test_req_2_1_sem_senha_recusa_e_nao_cria` | ✔ |
 | REQ-2.2 | senha fraca, recusa | T-1.1, T-2.1, T-2.2 | `test_req_2_2_senha_fraca_recusa_e_nao_cria` | ✔ |
 | REQ-2.3 | sem usuário ou e-mail, recusa | T-1.1, T-2.2, T-3.1 | `test_req_2_3_sem_usuario_ou_email_recusa` | ✔ |

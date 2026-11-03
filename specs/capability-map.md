@@ -32,7 +32,7 @@ Regras:
 | Mudança | Módulo | Tarefas da origem | Estado |
 |---|---|---|---|
 | 001-base-do-projeto | base | T0101, T0102, T0103 | em andamento (falta T-1.5 e arquivar) |
-| 002-administrador-inicial | base | — (pedido do dono em 2026-10-28) | no ar, 429 provado; faltam login do dono, verificação independente e arquivar |
+| 002-administrador-inicial | base | — (pedido do dono em 2026-10-28) | no ar, 429 e login do dono provados; faltam um 2º deploy visto, verificação independente e arquivar |
 | 003 (a abrir) | acesso-espaco — contas, perfil, cor, grupo de escrita, convites | T0201, T0202 + visão de 2026-11-03 | planejada |
 | 004 (a abrir) | fotos — envio e armazenamento privado | T0501 (adiantada) | planejada |
 | 005 (a abrir) | registros — backend | T0301, T0302, T0303 | planejada |

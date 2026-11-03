@@ -51,7 +51,7 @@ Tracker externo: nenhum.
 - [ ] T-3.2 Commit, push, deploy e conferência no ar (S)
   - Req: REQ-1.3, REQ-2.4, ABU-4
   - Verifica: o usuário entra no Admin; 6 `POST` seguidos em `/entrelinhas/admin/login/` terminam em 429; segundo deploy não altera a conta
-  - Estado: publicado; 429 visto no ar (2026-11-03); **faltam** o login do dono e ver um segundo deploy
+  - Estado: publicado; 429 visto no ar (2026-11-03); login do dono confirmado (2026-11-03); **falta** ver um segundo deploy manter a conta
 
 ## Onda 4 — Fechamento
 - [x] T-4.1 Atualizar `traceability.md` e rodar o `sdd_lint` (XS)
