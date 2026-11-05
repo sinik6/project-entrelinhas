@@ -36,5 +36,11 @@ RUN git config --global --add safe.directory /opt/flutter \
     && flutter precache --web \
     && flutter --version
 
+# O CI roda como root (o usuário do runner não é o `flutter`, uid 1000): o git de root também precisa
+# aceitar o SDK e a pasta montada como seguros.
+USER root
+RUN git config --system --add safe.directory '*'
+USER flutter
+
 WORKDIR /app
 CMD ["flutter", "--version"]
