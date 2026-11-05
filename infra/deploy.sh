@@ -54,6 +54,15 @@ if dc ps --status running --services | grep -qx db; then
     test -s "$backups/db-$stamp.dump"
     chmod 600 "$backups/db-$stamp.dump"
     echo "   banco: $backups/db-$stamp.dump"
+    # Fotos privadas (spec 004): cópia do volume com a API parada (nada grava durante a cópia). Na primeira
+    # publicação da 004 o contêiner antigo ainda não tem a pasta: não há o que copiar.
+    if dc cp entrelinhas-api:/data/fotos - > "$backups/fotos-$stamp.tar" 2>/dev/null; then
+        chmod 600 "$backups/fotos-$stamp.tar"
+        echo "   fotos: $backups/fotos-$stamp.tar"
+    else
+        rm -f "$backups/fotos-$stamp.tar"
+        echo "   fotos: nada a copiar ainda"
+    fi
 fi
 
 echo "=== Migrations"
@@ -67,6 +76,10 @@ admin_inicial
 
 echo "=== Subindo o sistema"
 dc up -d --wait --remove-orphans
+
+echo "=== Limpando fotos avulsas antigas"
+# `exec` (e não `run`): usa a API que acabou de subir, sem criar contêiner novo fora do balanceador (spec 004, REQ-6.9).
+dc exec -T entrelinhas-api python manage.py limpar_fotos
 
 echo "=== Conferindo pelo HTTPS público"
 # Rota nova: o Traefik pode levar alguns segundos para ler os labels. --retry-all-errors repete
@@ -87,6 +100,8 @@ esac
 # Guarda só os 10 backups mais novos do banco. `find` (e não `ls` com curinga): no primeiro
 # deploy não há backup e o curinga derrubaria o script pelo pipefail.
 find "$backups" -maxdepth 1 -type f -name 'db-*' -printf '%T@ %p\n' \
+    | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
+find "$backups" -maxdepth 1 -type f -name 'fotos-*' -printf '%T@ %p\n' \
     | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
 
 dc ps

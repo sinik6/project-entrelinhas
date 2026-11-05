@@ -1,4 +1,6 @@
 // Cliente HTTP da API (ADR-0006): mesma origem, sessão em cookie que o script não lê, CSRF por token no cabeçalho.
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 
@@ -53,18 +55,20 @@ class ApiHttp implements Api {
     String metodo,
     String caminho, {
     Object? corpo,
+    Object? Function()? fabricaDoCorpo,
   }) async {
+    // `fabricaDoCorpo` cria um corpo novo a cada tentativa: o multipart só pode ser enviado uma vez.
     var resposta = await _enviar(
       metodo,
       caminho,
-      corpo: corpo,
+      corpo: fabricaDoCorpo?.call() ?? corpo,
       token: _token ?? await _csrf(),
     );
     if (resposta.statusCode == 403) {
       resposta = await _enviar(
         metodo,
         caminho,
-        corpo: corpo,
+        corpo: fabricaDoCorpo?.call() ?? corpo,
         token: await _csrf(),
       );
     }
@@ -147,6 +151,39 @@ class ApiHttp implements Api {
   @override
   Future<Grupo> criarGrupo() async =>
       Grupo.fromJson(await _alterar('POST', '/grupo') as Map<String, dynamic>);
+
+  @override
+  Future<FotoEnviada> enviarFoto({
+    required Uint8List bytes,
+    required String nome,
+    required String tipo,
+    required String finalidade,
+  }) async {
+    final dados = await _alterar(
+      'POST',
+      '/fotos',
+      fabricaDoCorpo: () => FormData.fromMap({
+        'finalidade': finalidade,
+        'arquivo': MultipartFile.fromBytes(
+          bytes,
+          filename: nome,
+          contentType: DioMediaType.parse(tipo),
+        ),
+      }),
+    );
+    return FotoEnviada.fromJson(dados as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Perfil> definirFotoDePerfil(String fotoId) async => Perfil.fromJson(
+    await _alterar('PUT', '/perfil/foto', corpo: {'foto_id': fotoId})
+        as Map<String, dynamic>,
+  );
+
+  @override
+  Future<void> removerFotoDePerfil() async {
+    await _alterar('DELETE', '/perfil/foto');
+  }
 
   @override
   Future<ConviteGerado> gerarConvite() async => ConviteGerado.fromJson(

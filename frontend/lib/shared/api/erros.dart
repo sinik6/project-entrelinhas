@@ -10,6 +10,8 @@ String mensagemDoErro(Object erro) {
       return 'Sua sessão acabou. Entre de novo.';
     case 403:
       return 'Não foi possível confirmar a segurança do pedido. Recarregue a página e tente de novo.';
+    case 413:
+      return 'A foto é grande demais. Escolha uma menor.';
     case 429:
       return 'Muitas tentativas. Espere um minuto e tente de novo.';
     case 400 || 409:

@@ -2,7 +2,7 @@ import 'package:entrelinhas/features/acesso/sessao.dart';
 import 'package:entrelinhas/features/grupo/link_do_convite.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 import 'package:entrelinhas/shared/api/erros.dart';
-import 'package:entrelinhas/shared/ui/cores.dart';
+import 'package:entrelinhas/shared/ui/avatar.dart';
 import 'package:entrelinhas/shared/ui/pagina.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -125,18 +125,11 @@ class _GrupoPageState extends ConsumerState<GrupoPage> {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  Semantics(
-                    label: 'Cor de ${membro.nome}: ${membro.cor}',
-                    excludeSemantics: true,
-                    child: Container(
-                      key: Key('cor-membro-${membro.nome}'),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: corDeTexto(membro.cor),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                  Avatar(
+                    key: Key('cor-membro-${membro.nome}'),
+                    nome: membro.nome,
+                    cor: membro.cor,
+                    fotoUrl: membro.fotoUrl,
                   ),
                   const SizedBox(width: 12),
                   Expanded(child: Text(membro.nome)),

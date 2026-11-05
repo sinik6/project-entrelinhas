@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     # Domínios do Entrelinhas (um app por domínio).
     "apps.common",
     "apps.acesso",
+    "apps.fotos",
 ]
 
 MIDDLEWARE = [
@@ -129,6 +130,9 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 STATIC_URL = f"/{PREFIXO_URL}/django-static/" if PREFIXO_URL else "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Fotos privadas (spec 004): fora de static e media, num volume só da API; servidas por endpoint autenticado.
+FOTOS_DIR = Path(env("FOTOS_DIR", str(BASE_DIR / "fotos_dados")))
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.acesso.autenticacao.SessaoComCsrf"],

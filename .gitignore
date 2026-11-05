@@ -23,6 +23,7 @@ htmlcov/
 staticfiles/
 media/
 arquivos/
+backend/fotos_dados/
 
 ### Frontend (Next.js) ###
 node_modules/

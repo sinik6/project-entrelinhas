@@ -39,6 +39,10 @@ class Perfil(models.Model):
     grupo = models.ForeignKey(
         Grupo, on_delete=models.PROTECT, null=True, blank=True, related_name="perfis"
     )
+    # Foto de perfil opcional (spec 004); a apagada deixa o perfil sem foto.
+    foto = models.ForeignKey(
+        "fotos.Foto", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
 
     class Meta:
         constraints = [

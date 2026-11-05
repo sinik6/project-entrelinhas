@@ -16,7 +16,8 @@ def _rotas(padroes):
         if isinstance(padrao, URLResolver):
             yield from _rotas(padrao.url_patterns)
         else:
-            yield "/" + str(padrao.pattern)
+            # `fotos/<str:foto_id>` (Django) e `/fotos/{id}` (OpenAPI) viram a mesma forma: `/fotos/{}`.
+            yield re.sub(r"<[^>]+>", "{}", "/" + str(padrao.pattern))
 
 
 def _caminhos_dos_contratos() -> set[str]:
@@ -26,7 +27,9 @@ def _caminhos_dos_contratos() -> set[str]:
         # Contrato de mudança ainda não implementada: `x-estado: planejado` em `info`; sai quando a rota entra no código.
         if re.search(r"^  x-estado: planejado\s*$", texto, re.M):
             continue
-        caminhos |= set(re.findall(r"^  (/[\w/.-]*):\s*$", texto, re.M))
+        caminhos |= {
+            re.sub(r"\{[^}]+\}", "{}", c) for c in re.findall(r"^  (/[\w/.{}-]*):\s*$", texto, re.M)
+        }
     return caminhos
 
 

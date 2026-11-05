@@ -1,7 +1,6 @@
 openapi: 3.1.0
 info:
   title: Entrelinhas — fotos (mudança 004)
-  x-estado: planejado
   version: 1.1.0
   description: Fotos privadas de manuscrito e de perfil. Acrescenta rotas ao contrato da 003; não muda nenhuma rota existente (a 003 só ganha o campo `foto_url`).
 servers:

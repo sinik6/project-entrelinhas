@@ -44,6 +44,9 @@ services:
       DJANGO_PREFIXO_URL: entrelinhas
       POSTGRES_HOST: entrelinhas-db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Fotos privadas (spec 004): volume só da API, fora de qualquer pasta pública; entra no backup do deploy.
+      FOTOS_DIR: /data/fotos
+    volumes: [fotos_data:/data/fotos]
     depends_on:
       db: {condition: service_healthy}
     networks:
@@ -157,6 +160,7 @@ services:
 
 volumes:
   postgres_data:
+  fotos_data:
 
 networks:
   internal:

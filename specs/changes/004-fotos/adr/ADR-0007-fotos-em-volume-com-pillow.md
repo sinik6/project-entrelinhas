@@ -1,6 +1,6 @@
 # ADR-0007 — Fotos em volume privado, recodificadas com Pillow
 
-- Status: proposto (agente, por delegação do usuário em 2026-11-05); vira "aceito" na ratificação do G1
+- Status: aceito (usuário, 2026-11-05: "Sim, 004" ao pedir a implementação; proposto pelo agente por delegação)
 - Data: 2026-11-05
 - Mudança de origem: 004-fotos
 

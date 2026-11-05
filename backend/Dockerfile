@@ -20,6 +20,9 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.prod DJANGO_SECRET_KEY=build-only DJA
     python manage.py collectstatic --noinput
 
 RUN useradd --system --uid 1000 entrelinhas && chown -R entrelinhas /app
+
+# Fotos privadas (spec 004): o volume `fotos_data` é montado aqui e herda o dono e o modo desta pasta na primeira montagem.
+RUN mkdir -p /data/fotos && chown entrelinhas /data/fotos && chmod 700 /data/fotos
 USER entrelinhas
 
 EXPOSE 8000

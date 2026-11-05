@@ -28,6 +28,20 @@ server {
         return 200 "ok\n";
     }
 
+    # Envio de foto (spec 004): só esta rota aceita corpo de até 9 MB (a API limita a foto em 8 MB); o resto fica em 1 MB.
+    location = /api/v1/fotos {
+        client_max_body_size 9m;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_pass http://${API_UPSTREAM};
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $proto_original;
+        proxy_read_timeout 60s;
+        proxy_connect_timeout 5s;
+    }
+
     location /api/ {
         # Os cabeçalhos de segurança vêm só do nginx (sem duplicar os do Django).
         proxy_hide_header X-Frame-Options;

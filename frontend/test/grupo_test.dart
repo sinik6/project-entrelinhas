@@ -33,7 +33,10 @@ void main() {
     expect(find.text('Ana'), findsOneWidget);
     expect(find.text('Bia'), findsOneWidget);
     final amostra = t.widget<Container>(
-      find.byKey(const Key('cor-membro-Bia')),
+      find.descendant(
+        of: find.byKey(const Key('cor-membro-Bia')),
+        matching: find.byType(Container),
+      ),
     );
     expect(
       (amostra.decoration! as BoxDecoration).color,

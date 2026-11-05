@@ -33,9 +33,9 @@ flowchart LR
 ## 4. Modelo de dados
 | Modelo | Campos |
 |---|---|
-| `Foto` | `id` UUID PK · `dono` FK usuário · `grupo` FK grupo (nulo se a pessoa ainda não tem grupo; preenchido com o grupo do dono) · `finalidade` (`manuscrito`/`perfil`) · `tipo` (`image/jpeg`…) · `largura`, `altura`, `bytes` · `arquivo` (caminho relativo, UUID) · `anexada` bool · `criada_em` |
+| `Foto` | `id` UUID PK · `dono` FK usuário · `finalidade` (`manuscrito`/`perfil`) · `tipo` (`image/jpeg`…) · `largura`, `altura`, `bytes` · `arquivo` (nome UUID dentro de `FOTOS_DIR`) · `anexada` bool · `criada_em`. **Sem `grupo`** (mudou na implementação): quem pode ver a foto de perfil é decidido pelo grupo **atual** do dono, para a foto continuar visível se ele entrar num grupo depois de enviá-la |
 | `Perfil.foto` | FK nula para `Foto` (`SET_NULL`), finalidade `perfil` |
-A 005 acrescenta `Foto.registro` (FK nula). Índices: `(dono, criada_em)` para a cota; `(anexada, criada_em)` para a limpeza.
+A 005 acrescenta `Foto.registro` (FK nula). O `foto_url` devolvido é relativo à base da API (`fotos/<id>/arquivo`): o app junta com o prefixo da instalação. Índices: `(dono, criada_em)` para a cota; `(anexada, criada_em)` para a limpeza.
 
 ## 5. Contratos
 `contracts/openapi.yaml` (OpenAPI 3.1). Rotas de `/api/v1`:

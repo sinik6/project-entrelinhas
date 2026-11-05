@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'suporte/api_falsa.dart';
 import 'suporte/app_de_teste.dart';
+import 'suporte/seletor_falso.dart';
 
 typedef Preparar = Future<void> Function(
   WidgetTester t,
@@ -49,10 +50,55 @@ Future<void> telaGrupo(WidgetTester t, Size tamanho, Brightness brilho) async {
   await t.pumpAndSettle();
 }
 
+Future<void> telaPerfilComFoto(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirApp(
+    t,
+    api: ApiFalsa(sessao: perfilCompleto(fotoUrl: 'fotos/f1/arquivo')),
+    tamanho: tamanho,
+    brilho: brilho,
+  );
+  await t.tap(
+    find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Perfil'),
+    ),
+  );
+  await t.pumpAndSettle();
+}
+
+Future<void> telaPerfilComFotoEscolhida(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirApp(
+    t,
+    api: ApiFalsa(sessao: perfilCompleto()),
+    seletor: SeletorFalso(escolha: fotoDeTeste()),
+    tamanho: tamanho,
+    brilho: brilho,
+  );
+  await t.tap(
+    find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Perfil'),
+    ),
+  );
+  await t.pumpAndSettle();
+  await t.tap(find.widgetWithText(FilledButton, 'Escolher foto'));
+  await t.pumpAndSettle();
+}
+
 final telas = <String, Preparar>{
   'entrar': telaEntrar,
   'criar conta': telaConvite,
   'perfil': telaPerfil,
+  'perfil com foto': telaPerfilComFoto,
+  'perfil com foto escolhida': telaPerfilComFotoEscolhida,
   'grupo': telaGrupo,
 };
 

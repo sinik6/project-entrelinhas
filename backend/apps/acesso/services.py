@@ -37,6 +37,11 @@ def _perfil_de(usuario) -> Perfil | None:
     return Perfil.objects.select_related("grupo").filter(pk=usuario.pk).first()
 
 
+def foto_url(foto_id) -> str | None:
+    """Endereço da foto de perfil, relativo à base da API (o app monta o resto com o prefixo da instalação)."""
+    return f"fotos/{foto_id}/arquivo" if foto_id else None
+
+
 def grupo_para_dict(grupo: Grupo) -> dict:
     """Do parceiro só nome e cor: o e-mail nunca sai daqui (REQ-4.8)."""
     membros = list(grupo.perfis.order_by("usuario__date_joined", "usuario_id"))
@@ -44,7 +49,9 @@ def grupo_para_dict(grupo: Grupo) -> dict:
         "id": str(grupo.id),
         "tipo": grupo.tipo,
         "limite_membros": grupo.limite_membros,
-        "membros": [{"nome": m.nome, "cor": m.cor} for m in membros],
+        "membros": [
+            {"nome": m.nome, "cor": m.cor, "foto_url": foto_url(m.foto_id)} for m in membros
+        ],
         "vaga": len(membros) < grupo.limite_membros,
     }
 
@@ -55,6 +62,7 @@ def perfil_para_dict(usuario) -> dict:
         "email": usuario.email,
         "nome": perfil.nome if perfil else None,
         "cor": perfil.cor if perfil else None,
+        "foto_url": foto_url(perfil.foto_id) if perfil else None,
         "completo": perfil is not None,
         "grupo": grupo_para_dict(perfil.grupo) if perfil and perfil.grupo_id else None,
     }

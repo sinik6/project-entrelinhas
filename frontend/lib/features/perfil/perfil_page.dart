@@ -1,6 +1,8 @@
 import 'package:entrelinhas/features/acesso/sessao.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 import 'package:entrelinhas/shared/api/erros.dart';
+import 'package:entrelinhas/shared/foto/seletor_de_foto.dart';
+import 'package:entrelinhas/shared/ui/avatar.dart';
 import 'package:entrelinhas/shared/ui/cores.dart';
 import 'package:entrelinhas/shared/ui/pagina.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,12 @@ class _PerfilPageState extends ConsumerState<PerfilPage> {
   String? _okDoPerfil;
   String? _okDaSenha;
   bool _ocupado = false;
+  FotoEscolhida? _fotoEscolhida;
+  String? _erroDaFoto;
+  String? _okDaFoto;
+
+  /// Mesmo limite do servidor (spec 004); o app avisa antes de enviar, mas quem decide é a API.
+  static const _limiteDaFoto = 8 * 1024 * 1024;
 
   @override
   void initState() {
@@ -80,6 +88,132 @@ class _PerfilPageState extends ConsumerState<PerfilPage> {
     }
   }, aoFalhar: (erro) => _erroDoPerfil = erro);
 
+  Future<void> _escolherFoto() async {
+    setState(() {
+      _erroDaFoto = null;
+      _okDaFoto = null;
+    });
+    try {
+      final foto = await ref.read(seletorDeFotoProvider).escolher();
+      if (foto == null || !mounted) return;
+      if (foto.bytes.length > _limiteDaFoto) {
+        setState(
+          () => _erroDaFoto = 'A foto passa de 8 MB. Escolha uma menor.',
+        );
+        return;
+      }
+      setState(() => _fotoEscolhida = foto);
+    } on Object {
+      if (mounted) {
+        setState(
+          () => _erroDaFoto = 'Não foi possível abrir as fotos. Tente de novo.',
+        );
+      }
+    }
+  }
+
+  Future<void> _usarFoto() => _executar(() async {
+    final foto = _fotoEscolhida;
+    if (foto == null) return;
+    setState(() {
+      _erroDaFoto = null;
+      _okDaFoto = null;
+    });
+    final api = ref.read(apiProvider);
+    final enviada = await api.enviarFoto(
+      bytes: foto.bytes,
+      nome: foto.nome,
+      tipo: foto.tipo,
+      finalidade: 'perfil',
+    );
+    final novo = await api.definirFotoDePerfil(enviada.id);
+    ref.read(sessaoProvider.notifier).atualizar(novo);
+    if (mounted) {
+      setState(() {
+        _fotoEscolhida = null;
+        _okDaFoto = 'Foto do perfil atualizada.';
+      });
+    }
+  }, aoFalhar: (erro) => _erroDaFoto = mensagemDoErro(erro));
+
+  Future<void> _removerFoto() => _executar(() async {
+    setState(() {
+      _erroDaFoto = null;
+      _okDaFoto = null;
+    });
+    final api = ref.read(apiProvider);
+    await api.removerFotoDePerfil();
+    ref.read(sessaoProvider.notifier).atualizar(await api.perfil());
+    if (mounted) setState(() => _okDaFoto = 'Foto removida.');
+  }, aoFalhar: (erro) => _erroDaFoto = mensagemDoErro(erro));
+
+  Widget _secaoDaFoto(Perfil perfil) {
+    final escolhida = _fotoEscolhida;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        titulo(context, 'Foto do perfil'),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Avatar(
+              key: const Key('avatar-perfil'),
+              nome: perfil.nome ?? '',
+              cor: perfil.cor ?? '#4D7C0F',
+              fotoUrl: perfil.fotoUrl,
+              tamanho: 96,
+            ),
+            if (escolhida != null) ...[
+              const SizedBox(width: 16),
+              Semantics(
+                label: 'Prévia da foto escolhida',
+                image: true,
+                excludeSemantics: true,
+                child: ClipOval(
+                  key: const Key('previa-foto'),
+                  child: Image.memory(
+                    escolhida.bytes,
+                    width: 96,
+                    height: 96,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox(
+                      width: 96,
+                      height: 96,
+                      child: Icon(Icons.image_outlined),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.tonal(
+              onPressed: _ocupado ? null : _escolherFoto,
+              child: const Text('Escolher foto'),
+            ),
+            if (escolhida != null)
+              FilledButton(
+                onPressed: _ocupado ? null : _usarFoto,
+                child: const Text('Usar esta foto'),
+              ),
+            if (escolhida == null && perfil.fotoUrl != null)
+              OutlinedButton(
+                onPressed: _ocupado ? null : _removerFoto,
+                child: const Text('Remover foto'),
+              ),
+          ],
+        ),
+        Mensagem(_erroDaFoto, erro: true),
+        Mensagem(_okDaFoto),
+      ],
+    );
+  }
+
   Future<void> _trocarSenha() => _executar(() async {
     setState(() {
       _erroDaSenha = null;
@@ -108,6 +242,10 @@ class _PerfilPageState extends ConsumerState<PerfilPage> {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
+        if (perfil != null && perfil.completo) ...[
+          _secaoDaFoto(perfil),
+          const SizedBox(height: 24),
+        ],
         TextFormField(
           controller: _nome,
           decoration: InputDecoration(

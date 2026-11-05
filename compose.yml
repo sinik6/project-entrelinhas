@@ -33,10 +33,12 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.dev
       POSTGRES_HOST: postgres
+      FOTOS_DIR: /data/fotos
     ports:
       - "8010:8000"
     volumes:
       - ./backend:/app
+      - fotos_data:/data/fotos
     user: root
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
@@ -57,3 +59,4 @@ services:
 
 volumes:
   postgres_data:
+  fotos_data:

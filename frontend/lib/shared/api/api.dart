@@ -1,15 +1,23 @@
-// Contrato da API e modelos (spec 003). O app só conversa com a API por esta interface; os testes usam uma falsa.
+// Contrato da API e modelos (specs 003 e 004). O app só conversa com a API por esta interface; os testes usam uma falsa.
+import 'dart:typed_data';
+
 import 'package:entrelinhas/shared/api/api_http.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Membro {
-  const Membro({required this.nome, required this.cor});
+  const Membro({required this.nome, required this.cor, this.fotoUrl});
 
-  factory Membro.fromJson(Map<String, dynamic> json) =>
-      Membro(nome: json['nome'] as String, cor: json['cor'] as String);
+  factory Membro.fromJson(Map<String, dynamic> json) => Membro(
+    nome: json['nome'] as String,
+    cor: json['cor'] as String,
+    fotoUrl: json['foto_url'] as String?,
+  );
 
   final String nome;
   final String cor;
+
+  /// Endereço da foto, relativo à base da API (spec 004); `null` = sem foto.
+  final String? fotoUrl;
 }
 
 class Grupo {
@@ -46,6 +54,7 @@ class Perfil {
     this.nome,
     this.cor,
     this.grupo,
+    this.fotoUrl,
   });
 
   factory Perfil.fromJson(Map<String, dynamic> json) => Perfil(
@@ -53,6 +62,7 @@ class Perfil {
     nome: json['nome'] as String?,
     cor: json['cor'] as String?,
     completo: json['completo'] as bool,
+    fotoUrl: json['foto_url'] as String?,
     grupo: json['grupo'] == null
         ? null
         : Grupo.fromJson(json['grupo'] as Map<String, dynamic>),
@@ -63,6 +73,31 @@ class Perfil {
   final String? cor;
   final bool completo;
   final Grupo? grupo;
+
+  /// Foto de perfil (spec 004), relativa à base da API.
+  final String? fotoUrl;
+}
+
+/// Foto recém-enviada (ainda avulsa): o app a usa em seguida, por exemplo como foto de perfil.
+class FotoEnviada {
+  const FotoEnviada({
+    required this.id,
+    required this.finalidade,
+    required this.largura,
+    required this.altura,
+  });
+
+  factory FotoEnviada.fromJson(Map<String, dynamic> json) => FotoEnviada(
+    id: json['id'] as String,
+    finalidade: json['finalidade'] as String,
+    largura: json['largura'] as int,
+    altura: json['altura'] as int,
+  );
+
+  final String id;
+  final String finalidade;
+  final int largura;
+  final int altura;
 }
 
 class ConviteGerado {
@@ -94,6 +129,14 @@ abstract class Api {
   Future<void> trocarSenha(String atual, String nova);
   Future<Grupo?> grupo();
   Future<Grupo> criarGrupo();
+  Future<FotoEnviada> enviarFoto({
+    required Uint8List bytes,
+    required String nome,
+    required String tipo,
+    required String finalidade,
+  });
+  Future<Perfil> definirFotoDePerfil(String fotoId);
+  Future<void> removerFotoDePerfil();
   Future<ConviteGerado> gerarConvite();
   Future<Perfil> aceitarConvite({
     required String codigo,

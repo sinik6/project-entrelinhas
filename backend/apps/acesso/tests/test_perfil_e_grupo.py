@@ -130,7 +130,7 @@ def test_req_2_1_cria_grupo(novo_participante, logar):
     grupo = resposta.json()
     assert grupo["tipo"] == "escrita"
     assert grupo["limite_membros"] == 2
-    assert grupo["membros"] == [{"nome": "Ana", "cor": VERDE}]
+    assert grupo["membros"] == [{"nome": "Ana", "cor": VERDE, "foto_url": None}]
     assert grupo["vaga"] is True
     assert cliente.get("/api/v1/grupo").json()["grupo"] == grupo
 
@@ -158,7 +158,7 @@ def test_req_4_1_perfil(grupo_do_dono):
     assert perfil["email"] == "dono@example.com"
     assert perfil["cor"] == VERDE
     assert perfil["completo"] is True
-    assert perfil["grupo"]["membros"] == [{"nome": "Dono", "cor": VERDE}]
+    assert perfil["grupo"]["membros"] == [{"nome": "Dono", "cor": VERDE, "foto_url": None}]
 
 
 def test_req_4_8_grupo_mostra_nome_e_cor_do_parceiro_e_nunca_o_email(
@@ -173,7 +173,7 @@ def test_req_4_8_grupo_mostra_nome_e_cor_do_parceiro_e_nunca_o_email(
     corpo = cliente.get("/api/v1/grupo")
     perfil = cliente.get("/api/v1/perfil")
 
-    assert {"nome": "Bia", "cor": AMBAR} in corpo.json()["grupo"]["membros"]
+    assert {"nome": "Bia", "cor": AMBAR, "foto_url": None} in corpo.json()["grupo"]["membros"]
     for resposta in (corpo, perfil):
         assert "bia@example.com" not in resposta.content.decode()
 

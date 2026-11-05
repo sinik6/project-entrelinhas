@@ -44,8 +44,12 @@ const perfilJson = {
 };
 
 ApiHttp apiCom(AdaptadorFalso adaptador) => ApiHttp(
-  dio: Dio(BaseOptions(baseUrl: 'http://teste.local/api/v1', validateStatus: (_) => true))
-    ..httpClientAdapter = adaptador,
+  dio: Dio(
+    BaseOptions(
+      baseUrl: 'http://teste.local/api/v1',
+      validateStatus: (_) => true,
+    ),
+  )..httpClientAdapter = adaptador,
 );
 
 void main() {
@@ -205,6 +209,111 @@ void main() {
       expect(perfil.nome, 'Ana');
       expect(perfil.completo, isTrue);
       expect(perfil.grupo, isNull);
+    },
+  );
+
+  test('[004] REQ-6.1: a foto sobe em multipart, com o token de CSRF, a finalidade e o arquivo', () async {
+    final adaptador = AdaptadorFalso(
+      (o) => switch (o.path) {
+        '/auth/csrf' => json({'token': 'T1'}),
+        '/fotos' => json({
+          'id': 'abc',
+          'finalidade': 'perfil',
+          'largura': 10,
+          'altura': 20,
+        }, 201),
+        _ => json({}, 204),
+      },
+    );
+
+    final foto = await apiCom(adaptador).enviarFoto(
+      bytes: Uint8List.fromList([1, 2, 3]),
+      nome: 'x.png',
+      tipo: 'image/png',
+      finalidade: 'perfil',
+    );
+
+    final pedido = adaptador.requisicoes.firstWhere((o) => o.path == '/fotos');
+    expect(pedido.method, 'POST');
+    expect(pedido.headers['X-CSRFToken'], 'T1');
+    final dados = pedido.data as FormData;
+    expect(dados.fields.single.key, 'finalidade');
+    expect(dados.fields.single.value, 'perfil');
+    expect(dados.files.single.key, 'arquivo');
+    expect(dados.files.single.value.filename, 'x.png');
+    expect(foto.id, 'abc');
+    expect(foto.largura, 10);
+  });
+
+  test('[004] REQ-6.1: depois de um 403 de CSRF a foto é reenviada com um corpo novo (o multipart só vale uma vez)', () async {
+    var n = 0;
+    final adaptador = AdaptadorFalso((o) {
+      if (o.path == '/auth/csrf') return json({'token': 'T${++n}'});
+      return o.headers['X-CSRFToken'] == 'T2'
+          ? json({
+              'id': 'abc',
+              'finalidade': 'manuscrito',
+              'largura': 1,
+              'altura': 1,
+            }, 201)
+          : json({'detail': 'CSRF Failed'}, 403);
+    });
+
+    await apiCom(adaptador).enviarFoto(
+      bytes: Uint8List.fromList([1]),
+      nome: 'x.png',
+      tipo: 'image/png',
+      finalidade: 'manuscrito',
+    );
+
+    final tentativas = adaptador.requisicoes
+        .where((o) => o.path == '/fotos')
+        .toList();
+    expect(tentativas, hasLength(2));
+    expect(identical(tentativas.first.data, tentativas.last.data), isFalse);
+  });
+
+  test('[004] REQ-7.1: definir e remover a foto de perfil usam PUT e DELETE em /perfil/foto', () async {
+    final adaptador = AdaptadorFalso(
+      (o) => switch (o.path) {
+        '/auth/csrf' => json({'token': 'T1'}),
+        '/perfil/foto' when o.method == 'PUT' => json({
+          ...perfilJson,
+          'foto_url': 'fotos/abc/arquivo',
+        }),
+        _ => json({}, 204),
+      },
+    );
+    final api = apiCom(adaptador);
+
+    final perfil = await api.definirFotoDePerfil('abc');
+    await api.removerFotoDePerfil();
+
+    expect(perfil.fotoUrl, 'fotos/abc/arquivo');
+    final put = adaptador.requisicoes.firstWhere((o) => o.method == 'PUT');
+    expect(put.data, {'foto_id': 'abc'});
+    expect(
+      adaptador.requisicoes.where((o) => o.method == 'DELETE'),
+      hasLength(1),
+    );
+  });
+
+  test(
+    '[004] REQ-7.3: nome, cor e foto dos membros vêm do grupo; sem foto, nulo',
+    () {
+      final grupo = Grupo.fromJson({
+        'id': 'g',
+        'tipo': 'escrita',
+        'limite_membros': 2,
+        'vaga': false,
+        'membros': [
+          {'nome': 'Ana', 'cor': '#4D7C0F', 'foto_url': 'fotos/a/arquivo'},
+          {'nome': 'Bia', 'cor': '#B45309', 'foto_url': null},
+        ],
+      });
+
+      expect(grupo.membros[0].fotoUrl, 'fotos/a/arquivo');
+      expect(grupo.membros[1].fotoUrl, isNull);
     },
   );
 }

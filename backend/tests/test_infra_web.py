@@ -117,7 +117,7 @@ def test_ctl_20_pacotes_do_front_sao_so_os_do_adr_0005():
     pacotes = set(re.findall(r"^  ([a-z_]+):", secao("dependencies"), re.M))
     dev = set(re.findall(r"^  ([a-z_]+):", secao("dev_dependencies"), re.M))
 
-    assert pacotes == {"flutter", "dio", "flutter_riverpod", "go_router"}
+    assert pacotes == {"flutter", "dio", "flutter_riverpod", "go_router", "image_picker"}
     assert dev == {"flutter_test", "flutter_lints", "mocktail"}
     assert (RAIZ / "frontend/pubspec.lock").exists()
 

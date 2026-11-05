@@ -32,15 +32,17 @@ components:
         email: {type: string, format: email}
         nome: {type: string, maxLength: 60, nullable: true}
         cor: {$ref: '#/components/schemas/Cor'}
+        foto_url: {type: string, nullable: true, description: 'Foto de perfil (mudança 004), relativa à base da API: `fotos/<id>/arquivo`'}
         completo: {type: boolean}
         grupo: {$ref: '#/components/schemas/Grupo'}
     Membro:
       type: object
-      description: Só nome e cor; o e-mail nunca é devolvido ao outro membro.
+      description: Nome, cor e foto (mudança 004); o e-mail nunca é devolvido ao outro membro.
       required: [nome, cor]
       properties:
         nome: {type: string}
         cor: {$ref: '#/components/schemas/Cor'}
+        foto_url: {type: string, nullable: true, description: 'Relativa à base da API: `fotos/<id>/arquivo`'}
     Grupo:
       type: object
       nullable: true
