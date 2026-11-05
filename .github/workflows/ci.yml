@@ -59,7 +59,7 @@ jobs:
         run: docker build -t entrelinhas-flutter-sdk:local frontend
       - name: flutter analyze e flutter test
         run: |
-          docker run --rm -v "$PWD/frontend:/app" entrelinhas-flutter-sdk:local \
+          docker run --rm --user root -v "$PWD/frontend:/app" entrelinhas-flutter-sdk:local \
             bash -c "flutter pub get && flutter analyze && flutter test"
 
   imagem:

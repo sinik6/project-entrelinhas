@@ -34,8 +34,9 @@ def test_abu_1_entrar_e_aceitar_convite_tem_balde_de_5_fichas_por_minuto():
     assert "entrelinhas-entrar-limite.ratelimit.burst: '5'" in COMPOSE
 
     rotulos = _rotulos()
-    web_domino, web_ip = int(rotulos["entrelinhas-web-duckdns"]["priority"]), int(
-        rotulos["entrelinhas-web-ip"]["priority"]
+    web_domino, web_ip = (
+        int(rotulos["entrelinhas-web-duckdns"]["priority"]),
+        int(rotulos["entrelinhas-web-ip"]["priority"]),
     )
     for roteador, host, web in (
         ("entrelinhas-entrar-duckdns", "jpsys.duckdns.org", web_domino),
@@ -65,8 +66,13 @@ def test_ctl_11_servico_web_tem_nome_unico_sem_porta_publicada_e_o_app_vence_so_
     assert "healthcheck:" in bloco
     assert "entrelinhas-prefixo.stripprefix.prefixes: /entrelinhas" in COMPOSE
     rotulos = _rotulos()
-    for web, admin in (("entrelinhas-web-duckdns", "entrelinhas-admin-duckdns"), ("entrelinhas-web-ip", "entrelinhas-admin-ip")):
-        assert int(rotulos[web]["priority"]) < int(rotulos[admin]["priority"]), "o Admin não pode cair no app"
+    for web, admin in (
+        ("entrelinhas-web-duckdns", "entrelinhas-admin-duckdns"),
+        ("entrelinhas-web-ip", "entrelinhas-admin-ip"),
+    ):
+        assert int(rotulos[web]["priority"]) < int(rotulos[admin]["priority"]), (
+            "o Admin não pode cair no app"
+        )
         assert rotulos[web]["service"] == "entrelinhas-web"
         assert "entrelinhas-prefixo@docker" in rotulos[web]["middlewares"]
 
