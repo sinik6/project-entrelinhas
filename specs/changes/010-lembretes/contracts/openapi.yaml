@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: Entrelinhas — lembretes (mudança 010)
+  x-estado: planejado
+  version: 1.5.0
+  description: Assinaturas de Web Push. O disparo é do serviço `entrelinhas-lembretes`, sem rota pública.
+servers:
+  - url: /api/v1
+security:
+  - sessao: []
+paths:
+  /lembretes/chave-publica:
+    get:
+      operationId: obterChavePublica
+      summary: Chave pública VAPID (base64url)
+      responses:
+        '200':
+          description: A chave
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [chave]
+                properties:
+                  chave: {type: string}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+  /lembretes/assinaturas:
+    post:
+      operationId: guardarAssinatura
+      summary: Guarda a assinatura de push deste aparelho
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Assinatura'}
+      responses:
+        '201': {description: Guardada (ou já existia)}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '409':
+          description: A pessoa já tem 5 aparelhos
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+        '422':
+          description: Endereço fora da lista de serviços de push, não HTTPS, ou chaves inválidas
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroCampos'}}}
+    delete:
+      operationId: removerAssinatura
+      summary: Remove a assinatura deste aparelho (só do próprio usuário)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint]
+              properties:
+                endpoint: {type: string}
+      responses:
+        '204': {description: Removida}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404':
+          description: Não existe ou é de outra pessoa
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: entrelinhas_sessionid
+  schemas:
+    Assinatura:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint: {type: string, format: uri, maxLength: 2048}
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh: {type: string}
+            auth: {type: string}
+    ErroCampos:
+      type: object
+      required: [campos]
+      properties:
+        campos: {type: object, additionalProperties: {type: array, items: {type: string}}}
+    ErroDetalhe:
+      type: object
+      required: [detalhe]
+      properties:
+        detalhe: {type: string}
+  responses:
+    NaoAutenticado:
+      description: Sem sessão
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}

@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: Entrelinhas — calendário (mudança 009)
+  x-estado: planejado
+  version: 1.4.0
+  description: Estado de cada dia do mês, derivado dos registros. Sem horários, sem texto, sem visibilidade.
+servers:
+  - url: /api/v1
+security:
+  - sessao: []
+paths:
+  /calendario:
+    get:
+      operationId: obterCalendario
+      summary: Estados dos dias do mês até hoje
+      parameters:
+        - name: mes
+          in: query
+          required: true
+          schema: {type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$'}
+      responses:
+        '200':
+          description: Calendário do grupo (vazio se a pessoa não tem grupo)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Calendario'}
+        '401':
+          description: Sem sessão
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+        '422':
+          description: Mês mal formado, futuro ou anterior à entrada no grupo
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroCampos'}}}
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: entrelinhas_sessionid
+  schemas:
+    Calendario:
+      type: object
+      required: [mes, hoje, membros, dias]
+      properties:
+        mes: {type: string}
+        hoje: {type: string, format: date}
+        membros:
+          type: array
+          items:
+            type: object
+            required: [nome, cor]
+            properties:
+              nome: {type: string}
+              cor: {type: string, pattern: '^#[0-9A-Fa-f]{6}$'}
+              foto_url: {type: [string, 'null']}
+        dias:
+          type: array
+          items:
+            type: object
+            required: [data, estados, juntos]
+            properties:
+              data: {type: string, format: date}
+              estados:
+                type: array
+                description: Alinhado a `membros`
+                items: {type: string, enum: [escreveu, falhou, pendente, fora]}
+              juntos: {type: boolean}
+    ErroCampos:
+      type: object
+      required: [campos]
+      properties:
+        campos: {type: object, additionalProperties: {type: array, items: {type: string}}}
+    ErroDetalhe:
+      type: object
+      required: [detalhe]
+      properties:
+        detalhe: {type: string}

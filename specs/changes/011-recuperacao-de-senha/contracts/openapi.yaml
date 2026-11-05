@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  title: Entrelinhas — recuperação de senha (mudança 011)
+  x-estado: planejado
+  version: 1.6.0
+  description: Duas rotas públicas novas, com proteção CSRF e balde de 5 por minuto no Traefik.
+servers:
+  - url: /api/v1
+paths:
+  /auth/recuperacao:
+    post:
+      operationId: pedirRecuperacao
+      summary: Pede o link de redefinição; responde sempre igual
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string}
+      responses:
+        '202':
+          description: Mesma resposta com e sem conta, e acima do limite por hora
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroDetalhe'}
+        '403':
+          description: Token de proteção ausente ou inválido
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+        '429':
+          description: Limite do Traefik (5 por minuto por origem)
+  /auth/redefinir:
+    post:
+      operationId: redefinirSenha
+      summary: Define a senha nova com o token recebido por e-mail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [uid, token, nova_senha]
+              properties:
+                uid: {type: string}
+                token: {type: string}
+                nova_senha: {type: string}
+      responses:
+        '204': {description: Senha trocada e sessões encerradas; não abre sessão}
+        '400':
+          description: Link inválido, vencido ou já usado (a mesma resposta nos três casos)
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+        '403':
+          description: Token de proteção ausente ou inválido
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+        '422':
+          description: Senha fora da política (o token continua valendo)
+          content: {application/json: {schema: {$ref: '#/components/schemas/ErroCampos'}}}
+        '429':
+          description: Limite do Traefik (5 por minuto por origem)
+components:
+  schemas:
+    ErroCampos:
+      type: object
+      required: [campos]
+      properties:
+        campos: {type: object, additionalProperties: {type: array, items: {type: string}}}
+    ErroDetalhe:
+      type: object
+      required: [detalhe]
+      properties:
+        detalhe: {type: string}

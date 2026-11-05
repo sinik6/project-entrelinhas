@@ -85,10 +85,10 @@ Tracker externo: nenhum. Os testes levam `[003]` na docstring; nomes planejados 
   - Depende: T-3.4, T-3.2
 
 ## Onda 4 — Publicação
-- [ ] T-4.1 Conferir que `ADMIN_EMAIL` do ambiente `production` é o e-mail com que o dono quer entrar no app (XS, do usuário)
+- [x] T-4.1 Conferir que `ADMIN_EMAIL` do ambiente `production` é o e-mail com que o dono quer entrar no app (XS, do usuário)
   - Req: REQ-1.1
   - Verifica: o e-mail confere; nenhum segredo novo é necessário
-- [ ] T-4.2 Commit, push, deploy e conferência no ar: o dono entra, completa o perfil, cria o grupo e gera o convite; a segunda pessoa cria a conta; o login recebe 429 após 5 tentativas (S)
+- [ ] T-4.2 (deploy feito; falta o roteiro com as duas pessoas no ar) Commit, push, deploy e conferência no ar: o dono entra, completa o perfil, cria o grupo e gera o convite; a segunda pessoa cria a conta; o login recebe 429 após 5 tentativas (S)
   - Req: REQ-1.1, REQ-2.1, REQ-3.1, REQ-3.4, ABU-1
   - Verifica: roteiro no ar com as duas pessoas; medição do 429 com credenciais falsas
   - Depende: T-3.5, T-4.1

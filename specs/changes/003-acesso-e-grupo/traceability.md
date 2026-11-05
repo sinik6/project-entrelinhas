@@ -30,17 +30,17 @@ mudanças; a cobertura é conferida por leitura e por mutação (ver `validation
 | REQ-4.7 | senha atual errada ou nova fraca recusadas | T-1.3, T-2.4 | `test_req_4_7_*` | ✔ em teste |
 | REQ-4.8 | parceiro vê nome e cor, nunca o e-mail | T-1.3, T-2.4 | `test_req_4_8_*` | ✔ em teste |
 | REQ-4.9 | conta do administrador sem perfil: incompleto | T-1.3, T-2.4 | `test_req_4_9_*` | ✔ em teste |
-| REQ-5.1 | sem sessão, tela de entrar | T-3.3, T-3.4 | `entrar_test` | planejado |
-| REQ-5.2 | link de convite abre a criação de conta | T-3.3, T-3.4 | `convite_test` | planejado |
-| REQ-5.3 | perfil, grupo e botão de convidar | T-3.3, T-3.4, T-3.5 | `perfil_test`, `grupo_test`, e2e | planejado |
-| REQ-5.4 | erros em português, sem detalhe técnico | T-3.3, T-3.4 | `erros_test` | planejado |
-| REQ-5.5 | perfil incompleto leva ao perfil primeiro | T-3.3, T-3.4 | `perfil_test` | planejado |
+| REQ-5.1 | sem sessão, tela de entrar | T-3.3, T-3.4 | `entrar_test` | ✔ em teste |
+| REQ-5.2 | link de convite abre a criação de conta | T-3.3, T-3.4 | `convite_test` | ✔ em teste |
+| REQ-5.3 | perfil, grupo e botão de convidar | T-3.3, T-3.4, T-3.5 | `perfil_test`, `grupo_test`, e2e | ✔ em teste e no navegador local |
+| REQ-5.4 | erros em português, sem detalhe técnico | T-3.3, T-3.4 | `erros_test` | ✔ em teste |
+| REQ-5.5 | perfil incompleto leva ao perfil primeiro | T-3.3, T-3.4 | `perfil_test` | ✔ em teste |
 | NFR-SEC-1 | cookies sem leitura por script, só por HTTPS, com proteção de CSRF | T-1.2, T-2.3 | `test_nfr_sec_1_*` | ✔ em teste |
 | NFR-SEC-2 | código do convite com 128 bits, só o hash gravado | T-1.4, T-2.5 | `test_nfr_sec_2_*` | ✔ em teste |
 | NFR-SEC-3 | toda validação também no backend | T-1.3, T-2.4 | um teste 422 por regra | ✔ em teste |
-| NFR-A11Y-1 | WCAG 2.2 AA nos dois temas | T-3.4, T-3.5 | e2e com relatório de acessibilidade | planejado |
-| NFR-RESP-1 | 360 a 1280 px sem rolagem horizontal | T-3.4, T-3.5 | e2e | planejado |
-| ABU-1 | limite de tentativas de senha | T-3.1, T-3.2, T-4.2 | `test_abu_1_*`; medição no ar | planejado |
+| NFR-A11Y-1 | WCAG 2.2 AA nos dois temas | T-3.4, T-3.5 | e2e com relatório de acessibilidade | ✔ automatizado; sem relatório de leitor de tela |
+| NFR-RESP-1 | 360 a 1280 px sem rolagem horizontal | T-3.4, T-3.5 | e2e | ✔ parcial (ver validation.md) |
+| ABU-1 | limite de tentativas de senha | T-3.1, T-3.2, T-4.2 | `test_abu_1_*`; medição no ar | ✔ em teste e no ar (429 medido) |
 | ABU-2 | não revelar se o e-mail existe | T-1.2, T-2.3 | `test_abu_2_*` | ✔ em teste |
 | ABU-3 | adivinhar ou reutilizar o código | T-1.4, T-2.5 | `test_abu_3_*` | ✔ em teste |
 | ABU-4 | CSRF recusado, inclusive em rota anônima | T-1.2, T-2.3 | `test_abu_4_*` | ✔ em teste |
@@ -53,7 +53,7 @@ Cadeia de segurança: THR → CTL → teste
 
 | Ameaça | Controle | Requisito | Teste | Status |
 |---|---|---|---|---|
-| THR-11 | CTL-11 | ABU-1 | `test_abu_1_*`; medição no ar | planejado |
+| THR-11 | CTL-11 | ABU-1 | `test_abu_1_*`; medição no ar | ✔ em teste e no ar (429 medido) |
 | THR-12 | CTL-12 | ABU-2, REQ-1.2, REQ-3.6 | `test_abu_2_*` | ✔ em teste |
 | THR-13 | CTL-13 | ABU-3, NFR-SEC-2, REQ-3.5 | `test_prop_3_*`, `test_abu_3_*` | ✔ em teste |
 | THR-14 | CTL-14 | REQ-2.3, REQ-3.7 | `test_prop_2_*` | ✔ em teste |
@@ -61,8 +61,8 @@ Cadeia de segurança: THR → CTL → teste
 | THR-16 | CTL-16 | NFR-SEC-1, REQ-4.6 | `test_nfr_sec_1_*`, `test_req_4_6_*` | ✔ em teste |
 | THR-17 | CTL-17 | — | `test_req_isolamento_*` | ✔ em teste |
 | THR-18 | CTL-18 | REQ-1.4 | `test_req_1_4_*` | ✔ em teste |
-| THR-19 | CTL-19 | — | `test_ctl_19_*` (texto do nginx) | planejado |
-| THR-20 | CTL-20 | — | verificação do build; revisão do `pubspec.yaml` | planejado |
+| THR-19 | CTL-19 | — | `test_ctl_19_*` (texto do nginx) | ✔ em teste e no ar |
+| THR-20 | CTL-20 | — | verificação do build; revisão do `pubspec.yaml` | ✔ em teste |
 
 
-Legenda: "✔ em teste" = executado em ambiente de teste (PostgreSQL real, threads reais), não na VPS. Faltam as linhas do front (REQ-5.x, NFR-A11Y-1, NFR-RESP-1) e da infra (ABU-1, CTL-11, CTL-19, CTL-20), que são das ondas 3 e 4.
+Legenda: "✔ em teste" = executado em ambiente de teste (PostgreSQL real, threads reais, widget tests), não na VPS; "no ar" = visto em produção. Evidência e lacunas em `validation.md`.

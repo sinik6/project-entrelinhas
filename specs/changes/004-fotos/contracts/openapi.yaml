@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: Entrelinhas — fotos (mudança 004)
+  x-estado: planejado
+  version: 1.1.0
+  description: Fotos privadas de manuscrito e de perfil. Acrescenta rotas ao contrato da 003; não muda nenhuma rota existente (a 003 só ganha o campo `foto_url`).
+servers:
+  - url: /api/v1
+security:
+  - sessao: []
+paths:
+  /fotos:
+    post:
+      operationId: enviarFoto
+      summary: Envia uma foto (vira foto avulsa)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [arquivo, finalidade]
+              properties:
+                arquivo: {type: string, format: binary}
+                finalidade: {type: string, enum: [manuscrito, perfil]}
+      responses:
+        '201':
+          description: Foto guardada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Foto'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/Cota'}
+  /fotos/{id}:
+    delete:
+      operationId: apagarFoto
+      summary: Apaga uma foto avulsa do próprio dono
+      parameters: [{$ref: '#/components/parameters/FotoId'}]
+      responses:
+        '204': {description: Apagada}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {description: A foto já está anexada a um registro ou ao perfil}
+  /fotos/{id}/arquivo:
+    get:
+      operationId: obterArquivoDaFoto
+      summary: Devolve a imagem (só a quem pode ver)
+      parameters: [{$ref: '#/components/parameters/FotoId'}]
+      responses:
+        '200':
+          description: A imagem, com Cache-Control private no-store e X-Content-Type-Options nosniff
+          content:
+            image/jpeg: {schema: {type: string, format: binary}}
+            image/png: {schema: {type: string, format: binary}}
+            image/webp: {schema: {type: string, format: binary}}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+  /perfil/foto:
+    put:
+      operationId: definirFotoDoPerfil
+      summary: Usa uma foto avulsa de finalidade perfil como foto do perfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [foto_id]
+              properties:
+                foto_id: {type: string, format: uuid}
+      responses:
+        '200': {description: Perfil atualizado}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+    delete:
+      operationId: removerFotoDoPerfil
+      summary: Remove a foto do perfil
+      responses:
+        '204': {description: Removida}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: entrelinhas_sessionid
+  parameters:
+    FotoId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  schemas:
+    Foto:
+      type: object
+      required: [id, finalidade, largura, altura]
+      properties:
+        id: {type: string, format: uuid}
+        finalidade: {type: string, enum: [manuscrito, perfil]}
+        largura: {type: integer}
+        altura: {type: integer}
+    ErroCampos:
+      type: object
+      required: [campos]
+      properties:
+        campos:
+          type: object
+          additionalProperties: {type: array, items: {type: string}}
+    ErroDetalhe:
+      type: object
+      required: [detalhe]
+      properties:
+        detalhe: {type: string}
+  responses:
+    NaoAutenticado:
+      description: Sem sessão
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}
+    NaoEncontrado:
+      description: Não existe ou a pessoa não pode ver
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}
+    Validacao:
+      description: Arquivo ou campo inválido
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/ErroCampos'}}
+    Cota:
+      description: Muitos envios
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}

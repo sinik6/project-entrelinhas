@@ -22,9 +22,11 @@ def _rotas(padroes):
 def _caminhos_dos_contratos() -> set[str]:
     caminhos = set()
     for arquivo in RAIZ.glob("specs/changes/*/contracts/openapi.yaml"):
-        caminhos |= set(
-            re.findall(r"^  (/[\w/.-]*):\s*$", arquivo.read_text(encoding="utf-8"), re.M)
-        )
+        texto = arquivo.read_text(encoding="utf-8")
+        # Contrato de mudança ainda não implementada: `x-estado: planejado` em `info`; sai quando a rota entra no código.
+        if re.search(r"^  x-estado: planejado\s*$", texto, re.M):
+            continue
+        caminhos |= set(re.findall(r"^  (/[\w/.-]*):\s*$", texto, re.M))
     return caminhos
 
 

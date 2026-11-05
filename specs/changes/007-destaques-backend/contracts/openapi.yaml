@@ -1,0 +1,180 @@
+openapi: 3.1.0
+info:
+  title: Entrelinhas — destaques e comentários (mudança 007)
+  x-estado: planejado
+  version: 1.3.0
+  description: Destaques sobre o texto visível e comentários. As posições são em pontos de código do texto visível (ADR-0009).
+servers:
+  - url: /api/v1
+security:
+  - sessao: []
+paths:
+  /registros/{id}/destaques:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      operationId: listarDestaques
+      summary: Destaques com comentários de um registro com texto visível
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Destaque'}}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflito'}
+    post:
+      operationId: criarDestaque
+      summary: Cria um destaque (com comentário opcional)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inicio, fim]
+              properties:
+                inicio: {type: integer, minimum: 0}
+                fim: {type: integer, minimum: 1}
+                comentario: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '201':
+          description: Criado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Destaque'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflito'}
+        '422': {$ref: '#/components/responses/Validacao'}
+  /destaques/{id}:
+    delete:
+      operationId: apagarDestaque
+      summary: Apaga um destaque (só o autor), com os comentários dele
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '204': {description: Apagado}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/Proibido'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+  /destaques/{id}/comentarios:
+    post:
+      operationId: comentarDestaque
+      summary: Comenta um destaque
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '201':
+          description: Criado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Comentario'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/Conflito'}
+        '422': {$ref: '#/components/responses/Validacao'}
+  /comentarios/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: editarComentario
+      summary: Edita o próprio comentário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '200':
+          description: Editado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Comentario'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/Proibido'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+    delete:
+      operationId: apagarComentario
+      summary: Apaga o próprio comentário
+      responses:
+        '204': {description: Apagado}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/Proibido'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: entrelinhas_sessionid
+  schemas:
+    Autor:
+      type: object
+      required: [nome, cor]
+      properties:
+        nome: {type: string}
+        cor: {type: string, pattern: '^#[0-9A-Fa-f]{6}$'}
+    Comentario:
+      type: object
+      required: [id, texto, autor, meu, criado_em]
+      properties:
+        id: {type: string, format: uuid}
+        texto: {type: string}
+        autor: {$ref: '#/components/schemas/Autor'}
+        meu: {type: boolean}
+        criado_em: {type: string, format: date-time}
+        editado_em: {type: [string, 'null'], format: date-time}
+    Destaque:
+      type: object
+      required: [id, inicio, fim, trecho, autor, meu, criado_em, comentarios]
+      properties:
+        id: {type: string, format: uuid}
+        inicio: {type: integer}
+        fim: {type: integer}
+        trecho: {type: string, description: Calculado do texto visível; nunca guardado}
+        autor: {$ref: '#/components/schemas/Autor'}
+        meu: {type: boolean}
+        criado_em: {type: string, format: date-time}
+        comentarios: {type: array, items: {$ref: '#/components/schemas/Comentario'}}
+    ErroCampos:
+      type: object
+      required: [campos]
+      properties:
+        campos: {type: object, additionalProperties: {type: array, items: {type: string}}}
+    ErroDetalhe:
+      type: object
+      required: [detalhe]
+      properties:
+        detalhe: {type: string}
+  responses:
+    NaoAutenticado:
+      description: Sem sessão
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+    NaoEncontrado:
+      description: Não existe ou é de outro grupo
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+    Proibido:
+      description: Só quem escreveu pode fazer isso
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+    Conflito:
+      description: Sem texto visível, ou limite atingido
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErroDetalhe'}}}
+    Validacao:
+      description: Campo inválido (sem eco do texto e sem o tamanho do texto completo)
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErroCampos'}}}

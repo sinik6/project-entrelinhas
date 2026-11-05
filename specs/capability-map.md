@@ -33,15 +33,15 @@ Regras:
 |---|---|---|---|
 | 001-base-do-projeto | base | T0101, T0102, T0103 | em andamento (falta T-1.5 e arquivar) |
 | 002-administrador-inicial | base | — (pedido do dono em 2026-10-28) | no ar (225324a), 429 e login do dono provados; 2 auditorias independentes feitas, correções das ondas 5 e 6 ainda sem commit; faltam ratificação do usuário, 2º deploy visto e arquivar |
-| 003-acesso-e-grupo | acesso-espaco: contas, perfil (nome e cor), grupo de escrita, convite por link de uso único e a casca do front em Flutter (entrar, criar conta pelo convite, perfil, grupo, convidar) | T0201, T0202 + visão de 2026-11-03 | requisitos, design e tarefas aprovados; backend, infra e front feitos e testados (backend 178, front 47 testes; fluxo do dono conferido no navegador); falta deploy (T-4.x), aceite pelo segundo participante no ar e auditoria |
-| 004 (a abrir) | fotos — envio e armazenamento privado | T0501 (adiantada) | planejada |
-| 005 (a abrir) | registros — backend (entrega só com foto e texto; visibilidade filtrada no servidor) | T0301, T0302, T0303 | planejada |
-| 006 (a abrir) | registros — telas de escrita e leitura (o `frontend/` em Flutter já existe desde a 003) | T0304 | planejada |
-| 007 (a abrir) | destaques — backend | T0401, T0402 | planejada |
-| 008 (a abrir) | destaques — front | T0403 | planejada |
-| 009 (a abrir) | calendario — backend e front | visão de 2026-11-03 | planejada |
-| 010 (a abrir) | lembretes — PWA e Web Push | T0502 | planejada |
-| 011 (a abrir) | acesso-espaco — recuperação de senha por e-mail (exige serviço de e-mail; pode ser antecipada) | — (pedido do usuário em 2026-11-03) | planejada |
+| 003-acesso-e-grupo | acesso-espaco: contas, perfil (nome e cor), grupo de escrita, convite por link de uso único e a casca do front em Flutter (entrar, criar conta pelo convite, perfil, grupo, convidar) | T0201, T0202 + visão de 2026-11-03 | requisitos, design e tarefas aprovados; backend, infra e front feitos e testados (backend 178, front 47 testes; fluxo do dono conferido no navegador); no ar desde 2026-11-05 (ca2a7c8); faltam o roteiro com as duas pessoas no ar, a auditoria independente e arquivar |
+| 004-fotos | fotos — envio, armazenamento privado e entrega (manuscrito e perfil) | T0501 (adiantada) | spec escrita em 2026-11-05 (requisitos, design, tarefas, ameaças, contrato, ADR-0007 e 0008), em revisão; sem código |
+| 005-registros-backend | registros — backend (entrega só com foto e texto; visibilidade filtrada no servidor) | T0301, T0302, T0303 | spec escrita em 2026-11-05 (ADR-0009 e 0010), em revisão; sem código |
+| 006-registros-front | registros — telas de escrita e leitura (o `frontend/` em Flutter já existe desde a 003) | T0304 | spec escrita em 2026-11-05 (ADR-0011), em revisão; sem código |
+| 007-destaques-backend | destaques — backend | T0401, T0402 | spec escrita em 2026-11-05, em revisão; sem código |
+| 008-destaques-front | destaques — front | T0403 | spec escrita em 2026-11-05, em revisão; sem código |
+| 009-calendario | calendario — backend e front | visão de 2026-11-03 | spec escrita em 2026-11-05, em revisão; sem código |
+| 010-lembretes | lembretes — PWA e Web Push | T0502 | spec escrita em 2026-11-05 (ADR-0012), em revisão; sem código |
+| 011-recuperacao-de-senha | acesso-espaco — recuperação de senha por e-mail (exige provedor de e-mail do usuário; pode ser antecipada) | — (pedido do usuário em 2026-11-03) | spec escrita em 2026-11-05 (ADR-0013), em revisão; sem código |
 
 ## Decisões tomadas pelo dono
 | Data | Decisão |
@@ -56,8 +56,10 @@ Regras:
 | 2026-11-03 | Entrada por e-mail e senha; a conta do administrador vira a do dono no app; cor do perfil livre (`#RRGGBB`); recuperação de senha por e-mail como mudança própria depois. |
 | 2026-11-03 | O front é em **Flutter web como PWA** (padrão do `analista-b3`: SDK em contêiner, build servido por nginx atrás do Traefik), e já começa na 003. Isso substitui o Next.js do ADR-0001; o ADR novo nasce na 003. |
 
+| 2026-11-05 | O usuário delegou ao agente as decisões em aberto de 004 a 011 ("faça todas as specs faltantes, sem me perguntar nada"). Cada spec marca as suas como "decidida pelo agente", com a alternativa descartada; valem só depois da ratificação do dono no G1 de cada mudança. ADRs 0007 a 0013 estão como "proposto". |
+
 ## Decisões em aberto por módulo
-Cada uma vira esclarecimento (com opções e recomendação) na spec da mudança indicada, antes do design.
+Respondidas pelo agente nas specs 004 a 011 em 2026-11-05 (por delegação); a tabela fica como registro do que foi perguntado e depende da ratificação do dono.
 
 | Módulo | Pergunta |
 |---|---|
