@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "rest_framework",
     # Domínios do Entrelinhas (um app por domínio).
     "apps.common",
+    "apps.acesso",
 ]
 
 MIDDLEWARE = [
@@ -86,6 +87,12 @@ DATABASES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Login por e-mail (spec 003): o ModelBackend continua valendo para o Admin, que entra por nome de usuário.
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "apps.acesso.autenticacao.BackendPorEmail",
+]
+
 # Política de senhas (spec 002, D-2): vale para o Admin, para o comando `administrador_inicial` e
 # para as contas das próximas mudanças. O padrão do Django é uma lista vazia, ou seja, sem política.
 AUTH_PASSWORD_VALIDATORS = [
@@ -109,11 +116,22 @@ USE_TZ = True
 PREFIXO_URL = env("DJANGO_PREFIXO_URL", "").strip("/")
 PREFIXO_ROTAS = f"{PREFIXO_URL}/" if PREFIXO_URL else ""
 
+# Cookies com nome e caminho próprios: a VPS divide o domínio com outros sistemas (ADR-0006).
+# O cookie de CSRF também é HttpOnly: o app recebe o token no corpo de /auth/csrf, não o lê do cookie.
+SESSION_COOKIE_NAME = "entrelinhas_sessionid"
+CSRF_COOKIE_NAME = "entrelinhas_csrftoken"
+SESSION_COOKIE_PATH = f"/{PREFIXO_URL}/" if PREFIXO_URL else "/"
+CSRF_COOKIE_PATH = SESSION_COOKIE_PATH
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
 STATIC_URL = f"/{PREFIXO_URL}/django-static/" if PREFIXO_URL else "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.acesso.autenticacao.SessaoComCsrf"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],

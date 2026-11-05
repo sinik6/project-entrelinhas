@@ -65,6 +65,8 @@ jobs:
             --exclude='AGENTS.md' \
             --exclude='CLAUDE.md' \
             --exclude='backend/staticfiles/' \
+            --exclude='frontend/build/' \
+            --exclude='frontend/.dart_tool/' \
             ./ ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:~/${{ env.APP_NAME }}/
 
       - name: Generate .env.production on server

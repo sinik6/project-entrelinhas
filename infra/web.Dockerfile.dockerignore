@@ -1,0 +1,9 @@
+# Contexto do infra/web.Dockerfile (a raiz do repositório): só o front e a configuração do nginx.
+# Nada de .env, specs, backend nem build local.
+*
+!frontend/
+!infra/nginx/
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies

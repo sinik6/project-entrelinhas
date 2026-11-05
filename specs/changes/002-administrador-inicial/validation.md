@@ -67,7 +67,7 @@ Duas rodadas, ambas por agente separado, sem acesso ao raciocínio de quem imple
 | Achado da 2ª rodada | Situação |
 |---|---|
 | ALTA-1 testes de pipeline só liam texto | **Tratado**: execução do `deploy.sh` e do bloco do workflow, checagens por linha, 30 de 30 mutações detectadas |
-| ALTA-2 riscos aceitos e decisões "pelo agente" | **Parcial**: a delegação do usuário foi citada em `requirements.md`; as linhas passaram a "pendente de ratificação"; **só o usuário pode ratificar** (T-6.8) |
+| ALTA-2 riscos aceitos e decisões "pelo agente" | **Resolvido**: a delegação do usuário foi citada em `requirements.md` e, em 2026-11-03, o usuário ratificou as decisões e os riscos ("Aprovo e ratifico") |
 | MÉDIA-1 `run` com rótulos do Traefik durante a API no ar | **Corrigido** com `-l traefik.enable=false` nas duas chamadas; o comportamento do Traefik da VPS **não foi verificado** |
 | MÉDIA-2 lint não separa as mudanças | **Documentado** aqui e no cabeçalho de `test_pipeline.py`; os IDs levam `[001]`/`[002]` e os controles novos começam em CTL-8 |
 | MÉDIA-3 nomes de teste inexistentes | **Corrigido**: `-k ctl_8` e `-k ctl_9` selecionam testes |
@@ -85,4 +85,4 @@ Duas rodadas, ambas por agente separado, sem acesso ao raciocínio de quem imple
 - O valor real de `POSTGRES_PASSWORD`: se tem `$` ou ` #`, a mudança de aspas o altera (o workflow recusa antes).
 - O limite de 429 foi medido de um único endereço de origem.
 - O Art. 2 (teste primeiro) foi seguido na onda 1 (24 testes vistos falhando). Nas ondas 5 e 6 os testes foram escritos junto das correções e o vermelho antes do código não foi registrado; a prova de que eles pegam os defeitos é a mutação (30 de 30 detectadas).
-- A ratificação do usuário sobre os riscos aceitos e a revisão de CI, deploy e Traefik (T-6.8).
+- O Traefik da VPS e o log do Actions seguem sem verificação; a ratificação do usuário (2026-11-03) cobre os riscos e as decisões, não prova o comportamento da VPS.

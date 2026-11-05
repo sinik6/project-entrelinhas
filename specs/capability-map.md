@@ -1,18 +1,18 @@
 ---
 id: entrelinhas
-status: rascunho
+status: aprovado
 ---
 
 # Mapa de capacidades — Entrelinhas
 
 Fontes: [`specs/origem/especificacao-origem.md`](origem/especificacao-origem.md) e
 [`specs/origem/visao-complementar-2026-11-03.md`](origem/visao-complementar-2026-11-03.md).
-Reorganização aprovada pelo dono em 2026-11-03; o mapa como um todo ainda aguarda aprovação final (portão do P3).
+Reorganização e mapa aprovados pelo dono em 2026-11-03 (portão do P3).
 
 | Módulo (id estável) | Responsabilidade | Depende de | Spec viva |
 |---|---|---|---|
 | base | API, banco, health check, CI e deploy na VPS, administrador inicial | — | specs/system/base.md (sai ao arquivar a 001 e a 002) |
-| acesso-espaco | contas e sessão; perfil com foto opcional e cor obrigatória; grupo de escrita (máximo 2 membros no MVP) e convites | base | specs/system/acesso-espaco.md |
+| acesso-espaco | contas e sessão por e-mail e senha; perfil (nome e cor obrigatória; a foto de perfil vai com `fotos`); grupo de escrita (máximo 2 membros no MVP) e convite por link de uso único; recuperação de senha por e-mail (mudança própria depois) | base | specs/system/acesso-espaco.md |
 | fotos | foto do manuscrito: envio, armazenamento privado e entrega só a quem pode ler | acesso-espaco | specs/system/fotos.md |
 | registros | registro diário, entrega só com foto e texto, visibilidade `full`/`private`/`partial`, leitura filtrada no servidor, telas de escrita e leitura | acesso-espaco, fotos | specs/system/registros.md |
 | destaques | destaques e comentários estilo Kindle sobre o texto visível, na cor de quem comentou | registros | specs/system/destaques.md |
@@ -33,14 +33,15 @@ Regras:
 |---|---|---|---|
 | 001-base-do-projeto | base | T0101, T0102, T0103 | em andamento (falta T-1.5 e arquivar) |
 | 002-administrador-inicial | base | — (pedido do dono em 2026-10-28) | no ar (225324a), 429 e login do dono provados; 2 auditorias independentes feitas, correções das ondas 5 e 6 ainda sem commit; faltam ratificação do usuário, 2º deploy visto e arquivar |
-| 003 (a abrir) | acesso-espaco — contas, perfil, cor, grupo de escrita, convites | T0201, T0202 + visão de 2026-11-03 | planejada |
+| 003-acesso-e-grupo | acesso-espaco: contas, perfil (nome e cor), grupo de escrita, convite por link de uso único e a casca do front em Flutter (entrar, criar conta pelo convite, perfil, grupo, convidar) | T0201, T0202 + visão de 2026-11-03 | requisitos, design e tarefas aprovados; backend, infra e front feitos e testados (backend 178, front 47 testes; fluxo do dono conferido no navegador); falta deploy (T-4.x), aceite pelo segundo participante no ar e auditoria |
 | 004 (a abrir) | fotos — envio e armazenamento privado | T0501 (adiantada) | planejada |
-| 005 (a abrir) | registros — backend | T0301, T0302, T0303 | planejada |
-| 006 (a abrir) | registros — front (cria `frontend/`) | T0304 | planejada |
+| 005 (a abrir) | registros — backend (entrega só com foto e texto; visibilidade filtrada no servidor) | T0301, T0302, T0303 | planejada |
+| 006 (a abrir) | registros — telas de escrita e leitura (o `frontend/` em Flutter já existe desde a 003) | T0304 | planejada |
 | 007 (a abrir) | destaques — backend | T0401, T0402 | planejada |
 | 008 (a abrir) | destaques — front | T0403 | planejada |
 | 009 (a abrir) | calendario — backend e front | visão de 2026-11-03 | planejada |
 | 010 (a abrir) | lembretes — PWA e Web Push | T0502 | planejada |
+| 011 (a abrir) | acesso-espaco — recuperação de senha por e-mail (exige serviço de e-mail; pode ser antecipada) | — (pedido do usuário em 2026-11-03) | planejada |
 
 ## Decisões tomadas pelo dono
 | Data | Decisão |
@@ -50,6 +51,10 @@ Regras:
 | 2026-11-03 | Perfil: foto personalizada opcional; cor obrigatória, usada nos comentários e no calendário. |
 | 2026-11-03 | O calendário mostra o dia escrito e o dia em que falhou, e avisa quando os dois escreveram num intervalo de 2 horas. |
 | 2026-11-03 | Mapa reorganizado como acima (fotos antes de registros; calendário e lembretes como módulos). |
+| 2026-11-03 | O usuário aprovou o mapa de capacidades e ratificou os riscos aceitos pelo agente na 002. |
+| 2026-11-03 | A segunda pessoa entra por **link com código de uso único**. |
+| 2026-11-03 | Entrada por e-mail e senha; a conta do administrador vira a do dono no app; cor do perfil livre (`#RRGGBB`); recuperação de senha por e-mail como mudança própria depois. |
+| 2026-11-03 | O front é em **Flutter web como PWA** (padrão do `analista-b3`: SDK em contêiner, build servido por nginx atrás do Traefik), e já começa na 003. Isso substitui o Next.js do ADR-0001; o ADR novo nasce na 003. |
 
 ## Decisões em aberto por módulo
 Cada uma vira esclarecimento (com opções e recomendação) na spec da mudança indicada, antes do design.
@@ -58,7 +63,7 @@ Cada uma vira esclarecimento (com opções e recomendação) na spec da mudança
 |---|---|
 | acesso-espaco | Como o convite é criado e aceito (link, código, e-mail) e quando expira? O que acontece quando uma das duas pessoas sai? Fuso horário por usuário (necessário ao "dia" do calendário e ao lembrete). A cor vem de uma paleta fixa ou é livre, e as duas pessoas do grupo podem ter a mesma cor? Tamanho e tipos da foto de perfil. O modelo de dados deve chamar a unidade de "grupo" com tipo e limite, para o grupo de estudo e de leitura caberem depois sem refazer o banco. |
 | fotos | Onde ficam as fotos: SILO da VPS (padrão do Vinculus) ou volume? Tamanho e tipos aceitos. A foto é visível ao parceiro em registro `partial`? Quantas fotos por registro? |
-| registros | Unidade dos offsets (caractere Unicode ou unidade UTF-16 do JavaScript) e trecho `partial` por linhas ou por caracteres. Há tamanho mínimo de texto para valer? Registro entregue pode ser editado? A visibilidade pode mudar depois? Quantos registros por dia por pessoa? Registro `private` com foto e texto conta como "escreveu" no calendário do parceiro? |
+| registros | Unidade dos offsets (caractere Unicode ou unidade UTF-16 do JavaScript) e trecho `partial` por linhas ou por caracteres. Há tamanho mínimo de texto para valer? Registro entregue pode ser editado? A visibilidade pode mudar depois? Quantos registros por dia por pessoa? Registro `private` com foto e texto conta como "escreveu" no calendário do parceiro? O administrador da plataforma (que é um dos dois) consegue ler o banco e o Admin: `private` vale também contra ele (criptografia por usuário) ou se confia no operador? | 
 | destaques | Os offsets referem o texto integral ou o visível? Quem edita ou apaga um comentário? O autor do registro também pode destacar o próprio texto? |
 | calendario | O que é "falhou": dia sem entrega até a meia-noite no fuso da pessoa, ou até o horário do lembrete? "Intervalo de 2 horas" é entre os horários de entrega dos dois? O calendário do parceiro mostra o dia escrito mesmo quando o texto é privado? |
 | lembretes | Texto do lembrete, e se não é enviado a quem já entregou o dia. Chaves VAPID e o processo que dispara o push (serviço próprio no compose). |

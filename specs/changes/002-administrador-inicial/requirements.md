@@ -27,7 +27,7 @@ As contas das duas pessoas do diário **não** entram aqui: nascem na mudança d
 | Nome de usuário e e-mail do administrador vêm de variáveis do ambiente `production` (não ficam no repositório) | confirmada (usuário, 2026-10-28) |
 | A senha só é lida na hora de criar a conta; contas já existentes nunca têm a senha trocada por este comando | confirmada (usuário, 2026-10-28) |
 | A política de senhas do sistema vale para esta conta, sem exceção de teste; comprimento mínimo de 12 caracteres | confirmada (usuário, 2026-10-28) |
-| Em 2026-11-03 o usuário escreveu no chat que o agente deveria decidir por conta própria o que ficasse em aberto, sem outro dev, e usar um agente específico para a verificação, sem precisar dele. Com base nisso o agente decidiu ABU-4, REQ-2.5, REQ-1.4, e-mail no log e senha sempre exigida | delegação dada pelo usuário em chat; **as decisões do agente aguardam ratificação do usuário** (tasks.md, T-6.8) |
+| Em 2026-11-03 o usuário escreveu no chat que o agente deveria decidir por conta própria o que ficasse em aberto, sem outro dev, e usar um agente específico para a verificação, sem precisar dele. Com base nisso o agente decidiu ABU-4, REQ-2.5, REQ-1.4, e-mail no log e senha sempre exigida | delegação dada pelo usuário em chat; **decisões ratificadas pelo usuário em 2026-11-03** (tasks.md, T-6.8) |
 
 ## Métricas de sucesso
 - Depois do primeiro deploy com os valores configurados, o dono entra no Admin sem nenhum passo manual na VPS.

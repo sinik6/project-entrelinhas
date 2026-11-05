@@ -1,6 +1,6 @@
-# Ambiente de desenvolvimento: PostgreSQL + API (backend/) com recarga automática.
+# Ambiente de desenvolvimento: PostgreSQL + API (backend/) com recarga automática + app web (frontend/).
 # Portas 5432 e 8000 costumam estar ocupadas por outros projetos nesta máquina: o banco não
-# publica porta e a API sai em 8010.
+# publica porta e a API sai em 8010 e o app em 8011.
 #   docker compose up --build
 name: entrelinhas
 
@@ -39,6 +39,21 @@ services:
       - ./backend:/app
     user: root
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  # O app Flutter web e o repasse de /api/ para a API, numa só origem: http://localhost:8011
+  web:
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+      args:
+        BASE_HREF: /
+        API_BASE: /api/v1
+    depends_on:
+      - api
+    environment:
+      API_UPSTREAM: api:8000
+    ports:
+      - "8011:80"
 
 volumes:
   postgres_data:

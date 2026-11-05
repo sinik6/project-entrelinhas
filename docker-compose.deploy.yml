@@ -7,7 +7,7 @@
 # A rede traefik_proxy é dividida com outros sistemas, e o Docker registra o nome de cada serviço
 # como nome de rede em todas as redes dele. Por isso os serviços que entram nela têm nome único
 # (entrelinhas-api). A API não tem rota pública: o Traefik expõe dela apenas o Django Admin e os
-# estáticos dele; o resto de /entrelinhas será do front (entrelinhas-web, tarefa T0304).
+# estáticos dele; o resto de /entrelinhas é do front (entrelinhas-web).
 # Fotos (T0501) pedirão um bucket no SILO (rede infra_storage); ainda não entra aqui.
 name: project-entrelinhas
 
@@ -92,6 +92,68 @@ services:
       traefik.http.routers.entrelinhas-http.entrypoints: web
       traefik.http.routers.entrelinhas-http.middlewares: redirect-to-https@file
       traefik.http.routers.entrelinhas-http.service: entrelinhas-api
+
+  # O app (Flutter web) e o repasse de /api/ para a API, numa só origem (ADR-0006). O Traefik tira o
+  # prefixo /entrelinhas; o Admin (prioridade 200) e o limite de entrada (300) vencem o app (10).
+  entrelinhas-web:
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+      args:
+        BASE_HREF: /entrelinhas/
+        API_BASE: /entrelinhas/api/v1
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: entrelinhas-api:8000
+    depends_on:
+      entrelinhas-api: {condition: service_started}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:80/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      internal:
+        aliases: [entrelinhas-web]
+      traefik_proxy: {}
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: traefik_proxy
+      traefik.http.services.entrelinhas-web.loadbalancer.server.port: '80'
+      traefik.http.middlewares.entrelinhas-prefixo.stripprefix.prefixes: /entrelinhas
+      traefik.http.middlewares.entrelinhas-barra.redirectregex.regex: ^(https://[^/]+)/entrelinhas$$
+      traefik.http.middlewares.entrelinhas-barra.redirectregex.replacement: $${1}/entrelinhas/
+      traefik.http.middlewares.entrelinhas-barra.redirectregex.permanent: 'true'
+      # Entrar e aceitar convite (spec 003, ABU-1): balde de 5 fichas, uma a cada 12 s.
+      traefik.http.middlewares.entrelinhas-entrar-limite.ratelimit.average: '5'
+      traefik.http.middlewares.entrelinhas-entrar-limite.ratelimit.period: 1m
+      traefik.http.middlewares.entrelinhas-entrar-limite.ratelimit.burst: '5'
+      traefik.http.routers.entrelinhas-web-duckdns.rule: Host(`jpsys.duckdns.org`) && PathPrefix(`/entrelinhas`)
+      traefik.http.routers.entrelinhas-web-duckdns.entrypoints: websecure
+      traefik.http.routers.entrelinhas-web-duckdns.tls: 'true'
+      traefik.http.routers.entrelinhas-web-duckdns.tls.certresolver: duckdns
+      traefik.http.routers.entrelinhas-web-duckdns.priority: '10'
+      traefik.http.routers.entrelinhas-web-duckdns.middlewares: entrelinhas-barra@docker,entrelinhas-prefixo@docker,secure-headers@file
+      traefik.http.routers.entrelinhas-web-duckdns.service: entrelinhas-web
+      traefik.http.routers.entrelinhas-web-ip.rule: Host(`217.216.82.25`) && PathPrefix(`/entrelinhas`)
+      traefik.http.routers.entrelinhas-web-ip.entrypoints: websecure
+      traefik.http.routers.entrelinhas-web-ip.tls: 'true'
+      traefik.http.routers.entrelinhas-web-ip.priority: '10'
+      traefik.http.routers.entrelinhas-web-ip.middlewares: entrelinhas-barra@docker,entrelinhas-prefixo@docker,secure-headers@file
+      traefik.http.routers.entrelinhas-web-ip.service: entrelinhas-web
+      traefik.http.routers.entrelinhas-entrar-duckdns.rule: Host(`jpsys.duckdns.org`) && Method(`POST`) && (Path(`/entrelinhas/api/v1/auth/entrar`) || Path(`/entrelinhas/api/v1/convites/aceitar`))
+      traefik.http.routers.entrelinhas-entrar-duckdns.entrypoints: websecure
+      traefik.http.routers.entrelinhas-entrar-duckdns.tls: 'true'
+      traefik.http.routers.entrelinhas-entrar-duckdns.tls.certresolver: duckdns
+      traefik.http.routers.entrelinhas-entrar-duckdns.priority: '300'
+      traefik.http.routers.entrelinhas-entrar-duckdns.middlewares: entrelinhas-entrar-limite@docker,entrelinhas-prefixo@docker,secure-headers@file
+      traefik.http.routers.entrelinhas-entrar-duckdns.service: entrelinhas-web
+      traefik.http.routers.entrelinhas-entrar-ip.rule: Host(`217.216.82.25`) && Method(`POST`) && (Path(`/entrelinhas/api/v1/auth/entrar`) || Path(`/entrelinhas/api/v1/convites/aceitar`))
+      traefik.http.routers.entrelinhas-entrar-ip.entrypoints: websecure
+      traefik.http.routers.entrelinhas-entrar-ip.tls: 'true'
+      traefik.http.routers.entrelinhas-entrar-ip.priority: '300'
+      traefik.http.routers.entrelinhas-entrar-ip.middlewares: entrelinhas-entrar-limite@docker,entrelinhas-prefixo@docker,secure-headers@file
+      traefik.http.routers.entrelinhas-entrar-ip.service: entrelinhas-web
 
 volumes:
   postgres_data:

@@ -50,13 +50,29 @@ jobs:
       - name: Testes
         run: uv run pytest --create-db
 
-  imagem:
-    name: Build da imagem e compose de produção
+  frontend:
+    name: Frontend — analyze e testes (Flutter)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: docker build
+      - name: Imagem do SDK (versão fixa, SHA-256 conferido)
+        run: docker build -t entrelinhas-flutter-sdk:local frontend
+      - name: flutter analyze e flutter test
+        run: |
+          docker run --rm -v "$PWD/frontend:/app" entrelinhas-flutter-sdk:local \
+            bash -c "flutter pub get && flutter analyze && flutter test"
+
+  imagem:
+    name: Build das imagens e compose de produção
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker build da API
         run: docker build -t entrelinhas-api:ci backend
+      - name: docker build do app web
+        run: |
+          docker build -t entrelinhas-flutter-sdk:local frontend
+          docker build -f infra/web.Dockerfile -t entrelinhas-web:ci --build-arg BASE_HREF=/entrelinhas/ --build-arg API_BASE=/entrelinhas/api/v1 .
       - name: compose de produção válido
         env:
           POSTGRES_PASSWORD: validate-only

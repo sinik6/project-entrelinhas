@@ -37,7 +37,9 @@ mkdir -p "$backups"
 chmod 700 "$backups"
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 
-echo "=== Construindo a imagem"
+echo "=== Construindo as imagens"
+# O SDK do Flutter (com SHA-256 conferido) é uma imagem à parte, base do build do app web.
+docker build -t entrelinhas-flutter-sdk:local frontend
 dc build
 
 echo "=== Conferindo a configuração do administrador"
@@ -70,9 +72,11 @@ echo "=== Conferindo pelo HTTPS público"
 # Rota nova: o Traefik pode levar alguns segundos para ler os labels. --retry-all-errors repete
 # também erro de certificado (o do domínio sai do resolver duckdns).
 for base in https://jpsys.duckdns.org https://217.216.82.25; do
-    curl --fail --silent --show-error --insecure --output /dev/null \
-        --retry 20 --retry-delay 3 --retry-all-errors "$base/entrelinhas/admin/login/"
-    echo "   $base/entrelinhas/admin/login/: ok"
+    for caminho in /entrelinhas/admin/login/ /entrelinhas/ /entrelinhas/api/v1/auth/csrf; do
+        curl --fail --silent --show-error --insecure --output /dev/null \
+            --retry 20 --retry-delay 3 --retry-all-errors "$base$caminho"
+        echo "   $base$caminho: ok"
+    done
 done
 codigo=$(curl --silent --output /dev/null --write-out '%{http_code} %{redirect_url}' http://217.216.82.25/entrelinhas/admin/login/)
 case "$codigo" in

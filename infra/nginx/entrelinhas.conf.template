@@ -1,0 +1,60 @@
+# entrelinhas-web: uma origem só (ADR-0006). `/` = app Flutter (build web); `/api/` = API Django pela rede interna.
+# O Traefik tira o prefixo /entrelinhas antes de chegar aqui. Cabeçalhos de segurança em tudo (CTL-19).
+# Modelo do nginx oficial: `${API_UPSTREAM}` (ex.: entrelinhas-api:8000) vem do ambiente; o filtro
+# NGINX_ENVSUBST_FILTER=^API_ impede que `$host` e os demais `$` sejam trocados.
+map $http_x_forwarded_proto $proto_original {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    client_max_body_size 1m;
+    server_tokens off;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    # Flutter web compilado sem CDN: tudo vem da própria origem.
+    # 'wasm-unsafe-eval' é exigido pelo motor do Flutter (CanvasKit/skwasm) e é a única exceção.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location /api/ {
+        # Os cabeçalhos de segurança vêm só do nginx (sem duplicar os do Django).
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_pass http://${API_UPSTREAM};
+        # $http_host (e não $host) mantém a porta, senão o Django recusa o CSRF em desenvolvimento.
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $proto_original;
+        proxy_read_timeout 30s;
+        proxy_connect_timeout 5s;
+    }
+
+    # Arquivos que mudam a cada build: o navegador sempre pergunta de novo.
+    location ~ ^/(index\.html|flutter_bootstrap\.js|version\.json)$ {
+        root /srv/app;
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    }
+
+    # App Flutter: as rotas do go_router são por fragmento (#/…), então tudo o mais cai no index.html.
+    location / {
+        root /srv/app;
+        try_files $uri /index.html;
+    }
+}

@@ -123,12 +123,13 @@ Origem: `auditoria-independente-2.md`.
 - [x] T-6.7 MÉDIA-5: `validation.md`, `traceability.md` e `design.md` atualizados com o que foi de fato executado (S)
   - Req: todos
   - Verifica: `sdd_lint.py . --code backend` sem erro
-- [ ] T-6.8 Ratificação do usuário: riscos aceitos pelo agente (`threat-model.md`), decisões de spec desta onda e revisão de CI, deploy e Traefik (XS, do usuário)
+- [x] T-6.8 Ratificação do usuário: riscos aceitos pelo agente (`threat-model.md`), decisões de spec desta onda e revisão de CI, deploy e Traefik (XS, do usuário)
   - Req: todos
   - Verifica: o usuário confirma ou corrige cada linha de "Riscos aceitos"
+  - Estado: ratificado em 2026-11-03 ("Aprovo e ratifico")
 
 ## Revisão do usuário
 - [x] Criar `ADMIN_USUARIO`, `ADMIN_EMAIL` e `SENHA_ADMIN_INICIAL` no ambiente `production` antes do push da T-3.2 (feito em 2026-10-28).
 - [x] Conferir no navegador que o login do Admin funciona com a conta criada (feito em 2026-11-03).
 - [ ] Confirmar que o `POSTGRES_PASSWORD` do ambiente `production` não tem cifrão nem espaço seguido de cerquilha (o workflow passa a recusar; ver T-6.4).
-- [ ] Ratificar os riscos aceitos pelo agente (T-6.8).
+- [x] Ratificar os riscos aceitos pelo agente (T-6.8), feito em 2026-11-03.

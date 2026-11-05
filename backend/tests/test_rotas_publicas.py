@@ -8,7 +8,7 @@ import config.api_v1
 
 # Única lista de rotas que podem responder sem login. Rota nova pública exige editar esta lista
 # (e, portanto, passar por revisão).
-ROTAS_PUBLICAS = {"health"}
+ROTAS_PUBLICAS = {"health", "csrf", "entrar", "convite-aceitar"}
 
 
 def _rotas(padroes) -> Iterator[URLPattern]:

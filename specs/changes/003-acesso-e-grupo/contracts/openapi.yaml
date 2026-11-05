@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: Entrelinhas API — acesso e grupo
+  version: 0.2.0
+  description: >
+    Contrato escrito à mão na mudança 003. Prefixo público: /entrelinhas/api/v1 (o servidor vê /api/v1).
+    Toda rota que muda estado exige o cabeçalho X-CSRFToken, inclusive as anônimas. Quando a API de domínio crescer,
+    o contrato passa a ser gerado do código (ADR) e este arquivo é arquivado.
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: entrelinhas_sessionid
+  parameters:
+    CsrfToken:
+      name: X-CSRFToken
+      in: header
+      required: true
+      schema: {type: string}
+  schemas:
+    Cor:
+      type: string
+      pattern: '^#[0-9A-F]{6}$'
+      example: '#0B6E4F'
+    Perfil:
+      type: object
+      required: [email, completo]
+      properties:
+        email: {type: string, format: email}
+        nome: {type: string, maxLength: 60, nullable: true}
+        cor: {$ref: '#/components/schemas/Cor'}
+        completo: {type: boolean}
+        grupo: {$ref: '#/components/schemas/Grupo'}
+    Membro:
+      type: object
+      description: Só nome e cor; o e-mail nunca é devolvido ao outro membro.
+      required: [nome, cor]
+      properties:
+        nome: {type: string}
+        cor: {$ref: '#/components/schemas/Cor'}
+    Grupo:
+      type: object
+      nullable: true
+      required: [id, tipo, limite_membros, membros, vaga]
+      properties:
+        id: {type: string, format: uuid}
+        tipo: {type: string, enum: [escrita]}
+        limite_membros: {type: integer, minimum: 1, maximum: 2}
+        membros:
+          type: array
+          items: {$ref: '#/components/schemas/Membro'}
+        vaga: {type: boolean}
+    ErroUnico:
+      type: object
+      description: Mesma resposta para e-mail inexistente, senha errada, convite inválido e e-mail já usado.
+      properties:
+        detalhe: {type: string, example: 'Não foi possível concluir. Confira os dados.'}
+    ErroValidacao:
+      type: object
+      properties:
+        campos:
+          type: object
+          additionalProperties:
+            type: array
+            items: {type: string}
+paths:
+  /auth/csrf:
+    get:
+      operationId: csrf
+      summary: Token de proteção contra CSRF (pública)
+      security: []
+      responses:
+        '200':
+          description: token no corpo; o segredo vai em cookie HttpOnly
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token]
+                properties:
+                  token: {type: string}
+  /auth/entrar:
+    post:
+      operationId: entrar
+      summary: Entra com e-mail e senha (pública, com CSRF)
+      security: []
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, senha]
+              properties:
+                email: {type: string, format: email}
+                senha: {type: string}
+      responses:
+        '200':
+          description: sessão iniciada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Perfil'}
+        '400':
+          description: e-mail ou senha incorretos (mesma resposta nos dois casos)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroUnico'}
+        '403': {description: token de CSRF ausente ou inválido}
+        '429': {description: limite de tentativas do Traefik (balde de 5 fichas por minuto por origem)}
+  /auth/sair:
+    post:
+      operationId: sair
+      summary: Encerra a sessão no servidor
+      security: [{sessao: []}]
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      responses:
+        '204': {description: sessão encerrada}
+        '401': {description: sem sessão}
+        '403': {description: token de CSRF ausente ou inválido}
+  /perfil:
+    get:
+      operationId: perfil
+      summary: Perfil de quem está logado
+      security: [{sessao: []}]
+      responses:
+        '200':
+          description: perfil; completo=false quando ainda não há nome e cor
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Perfil'}
+        '401': {description: sem sessão}
+    patch:
+      operationId: perfilAlterar
+      summary: Define nome e cor
+      security: [{sessao: []}]
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome: {type: string, maxLength: 60}
+                cor: {$ref: '#/components/schemas/Cor'}
+      responses:
+        '200':
+          description: perfil atualizado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Perfil'}
+        '401': {description: sem sessão}
+        '403': {description: token de CSRF ausente ou inválido}
+        '422':
+          description: cor fora do formato, ilegível, igual ou indistinguível da do parceiro; nome inválido
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroValidacao'}
+  /perfil/senha:
+    post:
+      operationId: senhaTrocar
+      summary: Troca a senha e encerra as outras sessões
+      security: [{sessao: []}]
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senha_atual, senha_nova]
+              properties:
+                senha_atual: {type: string}
+                senha_nova: {type: string, minLength: 12}
+      responses:
+        '204': {description: senha trocada}
+        '401': {description: sem sessão}
+        '403': {description: token de CSRF ausente ou inválido}
+        '422':
+          description: senha atual errada ou nova fora da política
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroValidacao'}
+  /grupo:
+    get:
+      operationId: grupo
+      summary: Grupo de quem está logado (ou null)
+      security: [{sessao: []}]
+      responses:
+        '200':
+          description: o grupo, com nome e cor dos membros
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [grupo]
+                properties:
+                  grupo: {$ref: '#/components/schemas/Grupo'}
+        '401': {description: sem sessão}
+    post:
+      operationId: grupoCriar
+      summary: Cria o grupo de escrita da pessoa
+      security: [{sessao: []}]
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      responses:
+        '201':
+          description: grupo criado, com a pessoa como único membro
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Grupo'}
+        '401': {description: sem sessão}
+        '403': {description: token de CSRF ausente ou inválido}
+        '409': {description: a pessoa já pertence a um grupo}
+        '422': {description: perfil incompleto (sem nome e cor)}
+  /grupo/convites:
+    post:
+      operationId: conviteGerar
+      summary: Gera o convite do grupo (invalida o pendente anterior)
+      security: [{sessao: []}]
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      responses:
+        '201':
+          description: o código aparece só aqui, uma vez
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [codigo, expira_em]
+                properties:
+                  codigo: {type: string}
+                  expira_em: {type: string, format: date-time}
+        '401': {description: sem sessão}
+        '403': {description: token de CSRF ausente ou inválido}
+        '409': {description: sem grupo ou sem vaga}
+  /convites/aceitar:
+    post:
+      operationId: conviteAceitar
+      summary: Cria a conta pelo convite (pública, com CSRF)
+      security: []
+      parameters: [{$ref: '#/components/parameters/CsrfToken'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codigo, nome, email, senha, cor]
+              properties:
+                codigo: {type: string}
+                nome: {type: string, maxLength: 60}
+                email: {type: string, format: email}
+                senha: {type: string, minLength: 12}
+                cor: {$ref: '#/components/schemas/Cor'}
+      responses:
+        '201':
+          description: conta, perfil e entrada no grupo criados; sessão iniciada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Perfil'}
+        '400':
+          description: convite usado, expirado, inexistente ou e-mail já usado (mesma resposta)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroUnico'}
+        '403': {description: token de CSRF ausente ou inválido}
+        '422':
+          description: senha fora da política, cor inválida ou nome inválido
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErroValidacao'}
+        '429': {description: limite de tentativas do Traefik}
