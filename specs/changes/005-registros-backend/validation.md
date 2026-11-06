@@ -11,7 +11,7 @@ e o arquivamento não foi feito. Nada commitado ainda (2026-11-05).
 
 ## Ambiente
 - Backend: máquina local (Windows, Git Bash), PostgreSQL 17 descartável na porta 55433; `uv run pytest`. Sem dependência nova (só Django, DRF e Pillow, que já estavam).
-- Números finais: **339 passaram, 12 ignorados** (`jq`, rodam no CI); 106 são de `apps/registros`; `ruff` e `makemigrations --check` limpos; o teste de contrato compara as rotas com o OpenAPI (a 005 saiu de "planejado").
+- Números finais (depois da auditoria): **353 passaram, 12 ignorados** (`jq`, rodam no CI); 119 são de `apps/registros`; `ruff` e `makemigrations --check` limpos; o teste de contrato compara as rotas com o OpenAPI (a 005 saiu de "planejado").
 - Não houve navegador nesta mudança (a 005 não tem tela; as telas são da 006).
 
 ## Critério → evidência
@@ -38,7 +38,7 @@ e o arquivamento não foi feito. Nada commitado ainda (2026-11-05).
 | Contrato | `test_ctl_18_*` compara as rotas com o OpenAPI da 005; todos os contratos validam | ✔ |
 
 ## Mutação da regra de visibilidade (T-2.6)
-Roteiro com **22 mutantes** em `domain.py`, `services.py` e `fotos/servicos.py`; os 22 foram mortos: parcial devolve o texto inteiro; parcial devolve fotos; `private` devolve o texto; `private` devolve fotos;
+O roteiro agora está no repositório (`backend/apps/registros/tests/mutacao.py`) e tem **26 mutantes**; os 26 foram mortos na última rodada. A descrição abaixo é da primeira rodada, com 22 mutantes em `domain.py`, `services.py` e `fotos/servicos.py`; os 22 foram mortos (os 4 acrescentados depois cobrem a saída do grupo e a limpeza de fotos): parcial devolve o texto inteiro; parcial devolve fotos; `private` devolve o texto; `private` devolve fotos;
 parceiro recebe o trecho; todos veem como autor; trecho vazio aceito; trecho passa do fim; trecho negativo aceito; mínimo de texto 5; controle aceito; dia pelo UTC; mês futuro aceito; lista e detalhe sem filtro de grupo;
 foto de outro dono; foto já anexada aceita; sem teto de 3 fotos; lista em ordem errada; parceiro vê foto de `partial`; parceiro vê foto de `private`; foto de registro de outro grupo.
 Um mutante sobreviveu na primeira rodada ("aceita foto já anexada": era equivalente porque `registro__isnull` já bloqueava) e o teste `test_req_8_2_foto_marcada_como_anexada_*` foi acrescentado para matá-lo.
@@ -48,7 +48,25 @@ Um mutante sobreviveu na primeira rodada ("aceita foto já anexada": era equival
 - Sem teste de carga nem de volume: a lista do mês não é paginada (no máximo 2 pessoas × 31 dias).
 - A `entregue_em` guarda o instante do servidor; não há teste com relógio do servidor adulterado (fora do alcance).
 - O texto fica legível no banco para quem opera a VPS (ADR-0010, risco aceito, THR-38).
-- Sem auditoria independente (T-3.2). Sem prova de que a 006 converterá offsets UTF-16 corretamente (é da 006).
+- Auditoria independente feita (ver acima), mas só uma rodada, sobre o código antes das correções; as correções foram verificadas pelos testes e pela mutação, não por um segundo auditor. Sem prova de que a 006 converterá offsets UTF-16 corretamente (é da 006).
 
 ## Veredito
-**Parcial.** O backend de registros está implementado e testado com a regra de visibilidade protegida por 22 mutantes; faltam o deploy e a conferência no ar, a auditoria independente por subagente e o arquivamento em `registros.md`.
+**Parcial.** O backend de registros está implementado, auditado por um revisor independente e corrigido nos achados, com a regra de visibilidade protegida por 26 mutantes; faltam o deploy das correções e a conferência no ar, e o arquivamento em `registros.md`.
+
+## Auditoria independente (T-3.2, parte 1)
+Feita por um subagente separado (somente leitura, instruído a tentar quebrar a regra), que também rodou `pytest apps/registros apps/fotos` (155 passaram na hora). **Veredito dele: aprovado com ressalvas;
+nenhum caminho pela API entrega ao parceiro texto `private`, texto fora do trecho, offsets, tamanho do texto ou foto fora do `full`.** Achados e o que foi feito:
+
+| # | Severidade | Achado | Tratamento |
+|---|---|---|---|
+| 1 | média | registros ficam no grupo de origem: quem entra depois no grupo (ou o parceiro que ficou) lê os de quem saiu; o autor que saiu perdia os próprios | **corrigido**: `_pode_ler` (autor sempre; parceiro só se os dois ainda estão no grupo do registro), a lista com `autor = eu OU (grupo e autor ainda nele)`, a mesma conferência na foto; REQ-9.8 e CTL-40 novos; `test_troca_de_grupo.py` (6 testes) |
+| 2 | baixa | a limpeza de fotos avulsas podia apagar a foto que uma entrega acabara de anexar | **corrigido**: cada foto é reconferida com `select_for_update(skip_locked=True)` na hora de apagar; 2 testes (foto travada por outra transação e anexação no meio tempo) |
+| 3 | baixa | o banco garantia menos que a aplicação | **corrigido**: CHECKs de `visibilidade`, de `trecho_fim <= char_length(texto)` (em pontos de código, provado com emoji) e de "foto com registro está anexada"; migrações `registros 0002` e `fotos 0004`; `test_integridade.py` |
+| 4 | baixa | testes que provavam menos do que diziam | **corrigido**: a lista confere que o registro está nela; o log confere o nome real do arquivo; o ramo `IntegrityError → 409` ganhou teste próprio; a varredura de NFR-REG-1 pega `values`, `values_list`, `only` e `defer` em várias linhas |
+| 5 | baixa | divergências spec × código; roteiro de mutação fora do repositório; `
+` | **corrigido**: requirements, design e threat-model alinhados ao código; roteiro em `tests/mutacao.py`; a 006 (REQ-11.4) passa a trocar `
+` por `
+` antes de calcular posições |
+
+O auditor também listou o que **não** verificou: tempo de resposta (o ORM carrega o texto inteiro mesmo na visão do parceiro), nginx e BFF (cache ou log de corpo), o deploy e o OpenAPI linha a linha. Continuam sem verificação.
+A auditoria foi feita sobre o commit `e998f08`; as correções acima ainda **não estão commitadas nem no ar**.

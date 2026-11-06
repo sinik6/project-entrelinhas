@@ -207,6 +207,9 @@ def test_req_9_7_o_parceiro_nao_consegue_a_foto_por_a_lista_nem_por_id_conhecido
 
     lista = bia.get("/api/v1/registros?mes=2026-11").json()
 
+    assert [r["id"] for r in lista] == [registro["id"]], (
+        "o registro tem que estar na lista (senão o teste não prova nada)"
+    )
     assert registro["fotos"][0] not in json.dumps(lista)
 
 

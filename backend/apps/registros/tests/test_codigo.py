@@ -8,7 +8,7 @@ from django.contrib import admin
 
 from apps.registros.models import Registro
 
-from .conftest import entregar
+from .conftest import arquivos_em, entregar
 
 PASTA = Path(__file__).resolve().parents[1]
 FONTES = [
@@ -45,7 +45,27 @@ def test_nfr_reg_1_outros_apps_nao_leem_o_texto_do_registro():
         assert not leituras.search(arquivo.read_text(encoding="utf-8")), arquivo
 
 
-def test_nfr_reg_3_log_da_entrega_nao_leva_texto_trecho_nem_foto(dono, caplog):
+def test_nfr_reg_1_consultas_ao_registro_nao_trazem_a_coluna_texto_em_nenhum_arquivo():
+    """[005] NFR-REG-1 (reforço da auditoria): `Registro.objects` seguido de `values`, `values_list` ou `only`
+    com `texto` nas linhas seguintes (a consulta pode quebrar em várias linhas) também é leitura do texto."""
+    raiz = PASTA.parent
+    for arquivo in raiz.rglob("*.py"):
+        if "tests" in arquivo.parts or "migrations" in arquivo.parts or arquivo.name == "domain.py":
+            continue
+        linhas = arquivo.read_text(encoding="utf-8").splitlines()
+        for i, linha in enumerate(linhas):
+            if "Registro.objects" not in linha:
+                continue
+            janela = " ".join(linhas[i : i + 6])
+            if ".create(" in janela.split("Registro.objects", 1)[1][:30]:
+                continue  # escrever o texto na entrega não é ler
+            assert not re.search(r"\.(values|values_list|only|defer)\([^)]*texto", janela), (
+                arquivo,
+                i + 1,
+            )
+
+
+def test_nfr_reg_3_log_da_entrega_nao_leva_texto_trecho_nem_foto(dono, caplog, pasta_de_fotos):
     """[005] NFR-REG-3 / CTL-37: só ids e contagens."""
     texto = "SEGREDO-DO-DIARIO-QUE-NAO-PODE-IR-AO-LOG"
     with caplog.at_level(logging.DEBUG):
@@ -56,7 +76,10 @@ def test_nfr_reg_3_log_da_entrega_nao_leva_texto_trecho_nem_foto(dono, caplog):
     assert resposta.status_code == 201
     registrado = "\n".join(r.getMessage() for r in caplog.records)
     assert "SEGREDO" not in registrado
-    assert "minha-foto" not in registrado
+    assert "foto.jpg" not in registrado, "o nome enviado da foto não vai ao log"
+    assert not any(p.name in registrado for p in arquivos_em(pasta_de_fotos)), (
+        "o nome do arquivo guardado também não"
+    )
     assert resposta.json()["id"] in registrado, "o registro tem que deixar rastro (id)"
 
 

@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
+from django.db.models.functions import Length
 
 
 class Registro(models.Model):
@@ -44,6 +45,15 @@ class Registro(models.Model):
                     )
                 ),
                 name="registro_trecho_so_em_partial",
+            ),
+            # O que a aplicação garante, o banco também garante (o PostgreSQL em UTF8 conta pontos de código).
+            models.CheckConstraint(
+                condition=Q(visibilidade__in=["full", "private", "partial"]),
+                name="registro_visibilidade_conhecida",
+            ),
+            models.CheckConstraint(
+                condition=Q(trecho_fim__isnull=True) | Q(trecho_fim__lte=Length("texto")),
+                name="registro_trecho_dentro_do_texto",
             ),
         ]
         indexes = [models.Index(fields=["grupo", "data"], name="registro_grupo_data")]

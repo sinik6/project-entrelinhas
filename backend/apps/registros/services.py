@@ -7,6 +7,7 @@ from datetime import date
 from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.acesso.erros import ErroConflito, ErroValidacao
@@ -61,6 +62,23 @@ def apresentar(registros: list[Registro], usuario) -> list[dict]:
         domain.visivel_para(r, usuario.pk, autores.get(r.autor_id, {}), fotos.get(r.pk, []))
         for r in registros
     ]
+
+
+def _grupo_id_de(usuario_id):
+    return Perfil.objects.filter(pk=usuario_id).values_list("grupo_id", flat=True).first()
+
+
+def _pode_ler(registro: Registro, usuario) -> bool:
+    """O autor lê os próprios registros sempre. O parceiro só lê se os dois ainda estão no grupo do registro:
+    quem sai do grupo leva os registros, e quem entra depois não lê o que ficou (achado da auditoria da 005)."""
+    if registro.autor_id == usuario.pk:
+        return True
+    grupo_id = _grupo_id_de(usuario.pk)
+    return (
+        grupo_id is not None
+        and registro.grupo_id == grupo_id
+        and _grupo_id_de(registro.autor_id) == grupo_id
+    )
 
 
 def _grupo_id(usuario):
@@ -145,11 +163,8 @@ def ler(usuario, registro_id) -> dict:
         identificador = uuid.UUID(str(registro_id))
     except ValueError:
         raise ErroNaoEncontrado from None
-    grupo_id = _grupo_id(usuario)
-    registro = (
-        Registro.objects.filter(pk=identificador, grupo_id=grupo_id).first() if grupo_id else None
-    )
-    if registro is None:
+    registro = Registro.objects.filter(pk=identificador).first()
+    if registro is None or not _pode_ler(registro, usuario):
         raise ErroNaoEncontrado
     return apresentar([registro], usuario)[0]
 
@@ -167,13 +182,13 @@ def _mes_valido(mes) -> tuple[int, int]:
 def listar_mes(usuario, mes) -> list[dict]:
     ano, numero = _mes_valido(mes)
     grupo_id = _grupo_id(usuario)
-    if not grupo_id:
-        return []
     inicio = date(ano, numero, 1)
     fim = date(ano + (numero == 12), numero % 12 + 1, 1)
+    # Os próprios sempre; os do parceiro só enquanto os dois estão no grupo do registro.
+    visiveis = Q(autor=usuario)
+    if grupo_id:
+        visiveis |= Q(grupo_id=grupo_id, autor__perfil__grupo_id=grupo_id)
     registros = list(
-        Registro.objects.filter(grupo_id=grupo_id, data__gte=inicio, data__lt=fim).order_by(
-            "-entregue_em"
-        )
+        Registro.objects.filter(visiveis, data__gte=inicio, data__lt=fim).order_by("-entregue_em")
     )
     return apresentar(registros, usuario)

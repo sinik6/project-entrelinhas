@@ -55,7 +55,7 @@ engano. Sem API nova; usa a 004 e a 005.
 - **REQ-11.1** QUANDO o participante com grupo abrir Hoje sem ter entregue, O app DEVE mostrar o campo de texto, a escolha de 1 a 3 fotos e a escolha de visibilidade (todo o grupo lê, só eu, só um trecho), sem nenhuma opção marcada.
 - **REQ-11.2** ENQUANTO faltar texto com 10 caracteres úteis, ou foto, ou visibilidade, ou (em "só um trecho") o trecho, O app DEVE manter o botão Entregar desabilitado e dizer o que falta.
 - **REQ-11.3** QUANDO o participante escolher "só um trecho", selecionar parte do texto e tocar "Usar a seleção", O app DEVE mostrar a prévia com o texto exato que a outra pessoa lerá e marcar o trecho no campo.
-- **REQ-11.4** O app DEVE enviar o trecho em pontos de código, convertendo da posição UTF-16 do campo e ajustando a seleção para dentro, até os limites de grafema (nunca para fora).
+- **REQ-11.4** O app DEVE trocar `\r\n` e `\r` por `\n` no texto antes de calcular qualquer posição (a API recusa `\r`) e DEVE enviar o trecho em pontos de código, convertendo da posição UTF-16 do campo e ajustando a seleção para dentro, até os limites de grafema (nunca para fora).
 - **REQ-11.5** QUANDO o participante tocar em Entregar, O app DEVE pedir confirmação com o resumo (quem lê, quantas fotos) e o aviso de que o registro não pode ser editado nem apagado.
 - **REQ-11.6** QUANDO o participante confirmar, O app DEVE enviar as fotos, depois o registro, e mostrar "Registro entregue" e o registro do dia.
 - **REQ-11.7** SE o envio de uma foto ou do registro falhar, ENTÃO O app DEVE mostrar a mensagem em português, manter o texto e as escolhas, e permitir tentar de novo sem reenviar as fotos que já subiram.

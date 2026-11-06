@@ -29,7 +29,7 @@ visibilidade é a mais crítica do sistema.
 | Tamanho: o texto precisa de **pelo menos 10 caracteres** fora espaços e quebras nas pontas (para valer como entrega) e no máximo **20 000** | decidida pelo agente |
 | A entrega é **atômica**: um só pedido envia texto, visibilidade, trecho e fotos. Não há rascunho no servidor (o campo `status` da origem não existe); rascunho é coisa do app | decidida pelo agente (Art. 4; o texto íntimo não fica guardado antes de a pessoa decidir) |
 | **Um registro por pessoa por dia**; o dia é o do instante da entrega em `America/Sao_Paulo` | decidida pelo agente |
-| Registro entregue é **imutável**: não se edita, não se apaga e a visibilidade não muda; o administrador resolve pelo Admin (o Admin não mostra o texto) | decidida pelo agente (editar depois permitiria burlar o calendário e a leitura do parceiro) |
+| Registro entregue é **imutável**: não se edita, não se apaga e a visibilidade não muda; quem opera a plataforma resolve direto no banco (o Admin não mostra registros nem fotos; ADR-0010) | decidida pelo agente (editar depois permitiria burlar o calendário e a leitura do parceiro) |
 | De **1 a 3 fotos** de manuscrito por registro, todas do próprio autor, de finalidade `manuscrito` e ainda avulsas | decidida pelo agente |
 | O parceiro vê as fotos **só quando o registro é `full`**; em `partial` e `private` nenhuma foto vai (ela mostraria o texto inteiro) | decidida pelo agente |
 | Registro `private` **conta como entregue** para o parceiro (ele vê a indicação de entrega, sem texto nem fotos) | decidida pelo agente (confirma o texto da origem: "Enviado, mas mantido privado pelo autor") |
@@ -57,6 +57,7 @@ visibilidade é a mais crítica do sistema.
 | Parceiro do grupo | ler registro | registro | sim, filtrado | só o texto visível; `private` mostra só a indicação |
 | Parceiro | ver foto do manuscrito | foto | só se `full` | senão 404 |
 | Participante | ler registro de outro grupo | registro | não | 404 |
+| Participante | ler registro de quem já saiu do grupo | registro | não | 404; o autor continua lendo os dele |
 | Participante | editar, apagar ou mudar a visibilidade de registro entregue | registro | não | 405 |
 | Participante sem grupo | entregar | registro | não | 409 |
 | Anônimo | qualquer rota | registro | não | 401 |
@@ -83,6 +84,7 @@ visibilidade é a mais crítica do sistema.
 - **REQ-9.4** QUANDO o parceiro ler um registro `private`, O sistema DEVE devolver só a indicação de entrega, a hora e o aviso "Enviado, mas mantido privado pelo autor", sem texto e sem fotos.
 - **REQ-9.5** QUANDO o parceiro pedir a foto de um registro `partial` ou `private`, O sistema DEVE responder 404; de um `full`, DEVE devolver a imagem.
 - **REQ-9.6** SE o registro for de outro grupo, ENTÃO O sistema DEVE responder 404, também para a foto.
+- **REQ-9.8** QUANDO o autor sair do grupo (ou mudar de grupo), O sistema DEVE continuar mostrando a ele os próprios registros, e NÃO DEVE mostrá-los a quem entrar no grupo de origem depois, nem a quem ficou nele, nem a quem estiver no grupo novo (texto, lista, detalhe e fotos: 404 ou ausência na lista).
 - **REQ-9.7** O texto escondido NÃO DEVE aparecer em nenhum ponto de nenhuma resposta (corpo, erro, cabeçalho, lista, mensagem de validação), em qualquer rota que devolva dado de registro.
 
 ### US-10 — Listar por mês
@@ -90,7 +92,7 @@ visibilidade é a mais crítica do sistema.
 
 - **REQ-10.1** QUANDO o participante pedir os registros de um mês (`AAAA-MM`), O sistema DEVE devolver os registros do grupo daquele mês (dia em `America/Sao_Paulo`), do mais novo para o mais antigo, já filtrados pela visibilidade.
 - **REQ-10.2** SE o mês estiver mal formado ou for futuro, ENTÃO O sistema DEVE recusar com erro de validação.
-- **REQ-10.3** QUANDO o participante não tiver grupo, O sistema DEVE devolver lista vazia.
+- **REQ-10.3** QUANDO o participante não tiver grupo, O sistema DEVE devolver só os registros que ele mesmo escreveu (lista vazia, se nunca escreveu).
 
 ## Requisitos não funcionais
 - **NFR-REG-1** O sistema DEVE concentrar a regra de visibilidade em um único ponto do código (`visivel_para`), usado por todas as rotas, de modo que nenhuma rota serialize o texto do registro por outro caminho.

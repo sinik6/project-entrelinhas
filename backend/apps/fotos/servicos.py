@@ -179,6 +179,8 @@ def pode_ver(usuario, foto: Foto) -> bool:
             and registro["visibilidade"] == Registro.Visibilidade.FULL
             and grupo is not None
             and registro["grupo_id"] == grupo
+            # o autor ainda está no grupo: quem sai leva os registros, quem entra depois não os lê
+            and _grupo_de(foto.dono_id) == grupo
         )
     return False
 
@@ -209,10 +211,25 @@ def apagar_avulsa(usuario, foto_id) -> None:
 
 def limpar_avulsas_antigas() -> int:
     limite = timezone.now() - IDADE_DA_AVULSA
-    antigas = list(Foto.objects.filter(anexada=False, criada_em__lt=limite))
-    for foto in antigas:
-        apagar_foto(foto)
-    return len(antigas)
+    candidatas = list(
+        Foto.objects.filter(anexada=False, registro__isnull=True, criada_em__lt=limite).values_list(
+            "pk", flat=True
+        )
+    )
+    apagadas = 0
+    for identificador in candidatas:
+        # Cada foto é conferida de novo, com trava, na hora de apagar: se uma entrega a anexou no meio
+        # tempo (ou está anexando agora), ela fica (achado da auditoria da 005).
+        with transaction.atomic():
+            foto = (
+                Foto.objects.select_for_update(skip_locked=True)
+                .filter(pk=identificador, anexada=False, registro__isnull=True)
+                .first()
+            )
+            if foto is not None:
+                apagar_foto(foto)
+                apagadas += 1
+    return apagadas
 
 
 # ---------- foto de perfil ----------

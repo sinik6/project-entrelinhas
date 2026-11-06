@@ -4,6 +4,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class Foto(models.Model):
@@ -32,6 +33,13 @@ class Foto(models.Model):
     criada_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        constraints = [
+            # Foto que está num registro conta como anexada (a limpeza só apaga avulsas).
+            models.CheckConstraint(
+                condition=Q(registro__isnull=True) | Q(anexada=True),
+                name="foto_com_registro_esta_anexada",
+            ),
+        ]
         indexes = [
             models.Index(fields=["dono", "criada_em"], name="foto_dono_criada"),
             models.Index(fields=["anexada", "criada_em"], name="foto_anexada_criada"),

@@ -36,7 +36,7 @@ flowchart LR
 | `Registro` | `id` UUID PK · `grupo` FK · `autor` FK usuário · `data` DATE · `texto` TEXT · `visibilidade` (`full`/`private`/`partial`) · `trecho_inicio`, `trecho_fim` INT nulos · `entregue_em` timestamptz (servidor) |
 | Restrições | `unique(autor, data)` · `check`: (`partial` ⇔ `trecho_inicio` e `trecho_fim` não nulos) e `trecho_inicio >= 0` e `trecho_fim > trecho_inicio` |
 | `Foto` (da 004) | + `registro` FK nula (`PROTECT`), `ordem` SMALLINT |
-Índices: `(grupo, data)` para a lista do mês. O tamanho do texto em pontos de código é conferido na aplicação (o banco não conta pontos de código com segurança).
+Restrições do banco, além da aplicação (auditoria da 005): `visibilidade` só em `full`/`private`/`partial`; `trecho_fim <= char_length(texto)` (o PostgreSQL em UTF8 conta pontos de código, emoji é 1); na `Foto`, `registro` preenchido implica `anexada`. Índice `(grupo, data)` para a lista do mês.
 
 ## 5. Contratos
 `contracts/openapi.yaml`. Rotas de `/api/v1`:
@@ -46,11 +46,13 @@ flowchart LR
 | `GET /registros?mes=AAAA-MM` | registros do grupo no mês, na visão de quem pede |
 | `GET /registros/{id}` | um registro, na visão de quem pede |
 | `GET /fotos/{id}/arquivo` (da 004) | passa a aceitar o parceiro quando o registro da foto é `full` |
-Visão do **autor**: `{id, data, entregue_em, visibilidade, trecho, texto, fotos:[id], autor:{nome,cor}, meu:true}`.
+Visão do **autor**: `{id, data, entregue_em, visibilidade, trecho, texto, fotos:[id], autor:{nome,cor,foto_url}, meu:true}`.
 Visão do **parceiro**: `{id, data, entregue_em, visibilidade_efetiva, texto_visivel, fotos:[id], autor:{nome,cor}, meu:false, aviso?}`
 com `texto_visivel` = texto todo (`full`), o trecho (`partial`) ou `null` (`private`, com `aviso: "Enviado, mas mantido privado pelo autor"`);
 `fotos` vazia fora do `full`; **sem** `trecho`, sem `texto` e sem tamanho do texto completo. `visibilidade_efetiva` é `full`, `partial` ou `private`.
 Os métodos `PUT`, `PATCH` e `DELETE` em `/registros/{id}` respondem 405.
+
+**Quem lê o quê quando alguém sai do grupo (auditoria da 005):** o autor lê sempre os próprios registros; o parceiro só lê se ele e o autor ainda estão no grupo do registro (`_pode_ler`, e a mesma conferência na foto). A lista é `autor = eu OU (grupo = o meu E o autor ainda está nele)`.
 
 ## 6. Fluxos e estados de UI
 (Telas: 006.) A API responde o que a tela precisa: a lista já vem filtrada e ordenada; o 409 de "já entregou hoje" traz a mensagem pronta.
@@ -87,7 +89,7 @@ Os testes levam `[005]` na docstring; pasta `backend/apps/registros/tests/`.
 Mutação (Testing.md pedia avaliar): mutar `visivel_para` (devolver o texto inteiro no `partial`, devolver foto no `partial`, trocar `<` por `<=`) e provar que os testes falham.
 
 ## 11. Observabilidade
-Log da entrega: id do registro, autor (id), visibilidade, quantidade de fotos e tamanho do texto em caracteres; nunca texto, trecho ou nome de foto.
+Log da entrega: id do registro, autor (id), visibilidade e quantidade de fotos; nunca texto, tamanho do texto, trecho ou nome de foto.
 
 ## 12. Decisões
 | ADR | Decisão |

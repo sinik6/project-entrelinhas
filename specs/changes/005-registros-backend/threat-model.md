@@ -33,6 +33,7 @@ flowchart LR
 | THR-36 | entrega | T | foto de outra pessoa anexada ao próprio registro, ou foto reaproveitada | B | A | M | CTL-36 |
 | THR-37 | logs e Admin | I | texto aparece em log, mensagem de erro ou no Admin do Django | M | A | A | CTL-37 |
 | THR-38 | operador | I | quem administra a VPS lê o banco | A | A | A | CTL-39 |
+| THR-40 | saída do grupo | I | quem entra no grupo depois lê os registros de quem saiu, ou o parceiro que ficou lê os de quem foi | M | A | A | CTL-40 |
 | THR-39 | entrega | T | trecho inválido (negativo, gigante, invertido) causa erro 500 ou corte errado | M | M | M | CTL-38 |
 
 ## Controles
@@ -46,6 +47,7 @@ flowchart LR
 | CTL-36 | as fotos precisam ser do autor, de manuscrito, avulsas, de 1 a 3, na mesma transação | THR-36, REQ-8.2 | `test_req_8_2_*` |
 | CTL-37 | log sem texto, trecho ou nome de foto; Admin não registra `Registro`; erros de validação não repetem o texto | THR-37, NFR-REG-3, NFR-REG-4 | `test_nfr_reg_3_*`, `test_nfr_reg_4_*` |
 | CTL-38 | validação do intervalo contra o tamanho do texto em pontos de código; tipos inteiros estritos; 422, nunca 500 | THR-39, REQ-8.4, ABU-11 | `test_req_8_4_*`, `test_abu_11_*` |
+| CTL-40 | leitura só se autor e leitor ainda estão no grupo do registro (o autor lê sempre os seus), na lista, no detalhe e na foto | THR-40, REQ-9.8 | `test_troca_de_grupo.py` |
 | CTL-39 | risco aceito e registrado no ADR-0010; Admin sem registros e fotos, log sem conteúdo, backups com modo 600 | THR-38, NFR-REG-4 | `test_nfr_reg_4_*`; ADR-0010 aceito pelo dono |
 
 ## Riscos residuais

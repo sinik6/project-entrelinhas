@@ -19,7 +19,7 @@ Os testes levam `[005]` na docstring. Depende da 004 (fotos) em produção.
   - Arquivos: `backend/apps/registros/tests/test_entrega.py`
   - Verifica: vermelho
 - [x] T-1.3 [P] Testes de leitura por todas as rotas como autor e como parceiro; `private` e `partial` sem vazar em corpo, lista, foto e erro; outro grupo 404 (L)
-  - Req: REQ-9.1, REQ-9.5, REQ-9.6, REQ-9.7, ABU-8, ABU-10, CTL-32, CTL-33, CTL-35
+  - Req: REQ-9.1, REQ-9.5, REQ-9.6, REQ-9.7, REQ-9.8, ABU-8, ABU-10, CTL-32, CTL-33, CTL-35, CTL-40
   - Arquivos: `backend/apps/registros/tests/test_leitura.py`
   - Verifica: vermelho
 - [x] T-1.4 [P] Testes da lista por mês: fuso de São Paulo na virada do dia, mês inválido ou futuro, sem grupo (M)
