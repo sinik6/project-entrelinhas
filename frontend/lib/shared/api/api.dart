@@ -1,6 +1,7 @@
 // Contrato da API e modelos (specs 003 e 004). O app só conversa com a API por esta interface; os testes usam uma falsa.
 import 'dart:typed_data';
 
+import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api_http.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -137,6 +138,18 @@ abstract class Api {
   });
   Future<Perfil> definirFotoDePerfil(String fotoId);
   Future<void> removerFotoDePerfil();
+
+  /// Entrega o registro do dia (spec 005): `fotos` são ids de fotos já enviadas como `manuscrito`.
+  Future<Registro> entregarRegistro({
+    required String texto,
+    required String visibilidade,
+    required List<String> fotos,
+    Trecho? trecho,
+  });
+
+  /// Registros do grupo no mês `AAAA-MM`, na visão de quem pede, do mais novo para o mais antigo.
+  Future<List<Registro>> listarRegistros(String mes);
+  Future<Registro> lerRegistro(String id);
   Future<ConviteGerado> gerarConvite();
   Future<Perfil> aceitarConvite({
     required String codigo,

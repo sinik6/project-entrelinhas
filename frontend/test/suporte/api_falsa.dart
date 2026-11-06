@@ -1,6 +1,8 @@
 // API de mentira para os testes de widget: guarda o estado e as chamadas, e pode falhar quando o teste pedir.
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 
 const corAmbar = '#B45309';
@@ -19,6 +21,36 @@ Perfil perfilCompleto({
   completo: true,
   grupo: grupo,
   fotoUrl: fotoUrl,
+);
+
+/// Hoje, nos testes: 6/11/2026, 12:00 em São Paulo (15:00 UTC).
+final agoraDeTeste = DateTime.utc(2026, 11, 6, 15);
+const hojeDeTeste = '2026-11-06';
+
+/// Registro na visão do autor (`meu`) ou do parceiro.
+Registro registroDe({
+  String id = 'r1',
+  String data = hojeDeTeste,
+  DateTime? entregueEm,
+  String nome = 'Ana',
+  String cor = corVerde,
+  bool meu = true,
+  String visibilidade = Visibilidade.todos,
+  String? texto = 'Um dia calmo, de muita chuva.',
+  Trecho? trecho,
+  List<String> fotos = const ['fotoA'],
+  String? aviso,
+}) => Registro(
+  id: id,
+  data: data,
+  entregueEm: entregueEm ?? DateTime.utc(2026, 11, 6, 12, 30),
+  visibilidade: visibilidade,
+  texto: texto,
+  fotos: fotos,
+  autor: Autor(nome: nome, cor: cor),
+  meu: meu,
+  trecho: trecho,
+  aviso: aviso,
 );
 
 const perfilIncompleto = Perfil(email: 'dono@example.com', completo: false);
@@ -49,6 +81,18 @@ class ApiFalsa implements Api {
   Object? falhaAoEnviarFoto;
   Object? falhaAoDefinirFoto;
   Object? falhaAoRemoverFoto;
+
+  /// Registros que a API "tem" (todas as pessoas), já na visão de quem está logado.
+  final registros = <Registro>[];
+  Object? falhaAoEntregar;
+  Object? falhaAoListar;
+
+  /// Falhas consumidas uma por envio de foto, em ordem (`null` = esse envio dá certo).
+  final filaDeFalhasDeFoto = <Object?>[];
+
+  /// Enquanto não for completado, a entrega fica pendente (para provar o duplo toque).
+  Completer<void>? portaoDaEntrega;
+  Map<String, Object?> ultimaEntrega = {};
   int fotosEnviadas = 0;
   Map<String, Object?> ultimaFoto = {};
 
@@ -114,7 +158,67 @@ class ApiFalsa implements Api {
     grupoAtual = grupoCom([
       Membro(nome: eu.nome ?? '', cor: eu.cor ?? corVerde),
     ]);
+    sessao = Perfil(
+      email: eu.email,
+      nome: eu.nome,
+      cor: eu.cor,
+      completo: eu.completo,
+      grupo: grupoAtual,
+      fotoUrl: eu.fotoUrl,
+    );
     return grupoAtual!;
+  }
+
+  @override
+  Future<Registro> entregarRegistro({
+    required String texto,
+    required String visibilidade,
+    required List<String> fotos,
+    Trecho? trecho,
+  }) async {
+    chamadas.add('entregarRegistro');
+    ultimaEntrega = {
+      'texto': texto,
+      'visibilidade': visibilidade,
+      'fotos': List<String>.of(fotos),
+      'trecho': trecho,
+    };
+    await portaoDaEntrega?.future;
+    if (falhaAoEntregar != null) throw falhaAoEntregar!;
+    if (registros.any((r) => r.meu && r.data == hojeDeTeste)) {
+      throw const ErroApi(409, detalhe: 'Você já entregou o registro de hoje.');
+    }
+    final eu = sessao!;
+    final novo = Registro(
+      id: 'novo${registros.length + 1}',
+      data: hojeDeTeste,
+      entregueEm: agoraDeTeste,
+      visibilidade: visibilidade,
+      texto: texto,
+      fotos: fotos,
+      autor: Autor(nome: eu.nome ?? '', cor: eu.cor ?? corVerde),
+      meu: true,
+      trecho: trecho,
+    );
+    registros.add(novo);
+    return novo;
+  }
+
+  @override
+  Future<List<Registro>> listarRegistros(String mes) async {
+    chamadas.add('listarRegistros:$mes');
+    if (falhaAoListar != null) throw falhaAoListar!;
+    return registros.where((r) => r.data.startsWith(mes)).toList()
+      ..sort((a, b) => b.entregueEm.compareTo(a.entregueEm));
+  }
+
+  @override
+  Future<Registro> lerRegistro(String id) async {
+    chamadas.add('lerRegistro:$id');
+    return registros.firstWhere(
+      (r) => r.id == id,
+      orElse: () => throw const ErroApi(404),
+    );
   }
 
   @override
@@ -141,6 +245,10 @@ class ApiFalsa implements Api {
       'tipo': tipo,
       'finalidade': finalidade,
     };
+    if (filaDeFalhasDeFoto.isNotEmpty) {
+      final falha = filaDeFalhasDeFoto.removeAt(0);
+      if (falha != null) throw falha;
+    }
     if (falhaAoEnviarFoto != null) throw falhaAoEnviarFoto!;
     fotosEnviadas++;
     return FotoEnviada(

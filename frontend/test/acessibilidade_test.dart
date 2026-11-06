@@ -1,10 +1,12 @@
 // [003] NFR-A11Y-1 e NFR-RESP-1: guias de acessibilidade do Flutter nos dois temas e telas sem estouro de 360 a 1280 px.
+import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'suporte/api_falsa.dart';
 import 'suporte/app_de_teste.dart';
+import 'suporte/hoje_de_teste.dart';
 import 'suporte/seletor_falso.dart';
 
 typedef Preparar = Future<void> Function(
@@ -93,7 +95,93 @@ Future<void> telaPerfilComFotoEscolhida(
   await t.pumpAndSettle();
 }
 
+Future<void> telaHoje(WidgetTester t, Size tamanho, Brightness brilho) async {
+  await abrirHoje(t, tamanho: tamanho, brilho: brilho);
+}
+
+Future<void> telaHojePreenchida(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirHoje(t, tamanho: tamanho, brilho: brilho);
+  await preencherTudo(t);
+}
+
+Future<void> telaHojeComTrecho(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirHoje(t, tamanho: tamanho, brilho: brilho);
+  await escrever(t, textoValido);
+  await adicionarFoto(t);
+  await tocarTexto(t, 'Só um trecho');
+  await selecionar(t, 0, 4);
+  await tocarBotao(t, 'Usar a seleção');
+}
+
+Future<void> telaHojeEntregue(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  final api = apiDaAna()..registros.add(registroDe(id: 'meu'));
+  await abrirHoje(t, api: api, tamanho: tamanho, brilho: brilho);
+}
+
+Future<void> telaDiario(WidgetTester t, Size tamanho, Brightness brilho) async {
+  final api = apiDaAna()
+    ..registros.addAll([
+      registroDe(
+        id: 'a',
+        visibilidade: Visibilidade.trecho,
+        texto: 'Antes do meio, meio, depois do meio.',
+        trecho: const Trecho(inicio: 15, fim: 20),
+      ),
+      registroDe(
+        id: 'b',
+        nome: 'Bia',
+        cor: corAmbar,
+        meu: false,
+        data: '2026-11-05',
+        entregueEm: DateTime.utc(2026, 11, 5, 12),
+        texto: 'Texto completo da Bia.',
+        fotos: const ['f1'],
+      ),
+      registroDe(
+        id: 'c',
+        nome: 'Bia',
+        cor: corAmbar,
+        meu: false,
+        data: '2026-11-04',
+        entregueEm: DateTime.utc(2026, 11, 4, 12),
+        visibilidade: Visibilidade.privado,
+        texto: null,
+        fotos: const [],
+        aviso: 'Enviado, mas mantido privado pelo autor',
+      ),
+    ]);
+  await abrirDiario(t, api: api, tamanho: tamanho, brilho: brilho);
+}
+
+Future<void> telaFotoCheia(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await telaDiario(t, tamanho, brilho);
+  await t.tap(find.byKey(const Key('foto-f1')));
+  await t.pumpAndSettle();
+}
+
 final telas = <String, Preparar>{
+  'hoje': telaHoje,
+  'hoje preenchida': telaHojePreenchida,
+  'hoje com trecho': telaHojeComTrecho,
+  'hoje já entregue': telaHojeEntregue,
+  'diário': telaDiario,
+  'foto em tela cheia': telaFotoCheia,
   'entrar': telaEntrar,
   'criar conta': telaConvite,
   'perfil': telaPerfil,

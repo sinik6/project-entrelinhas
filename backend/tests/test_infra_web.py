@@ -82,7 +82,9 @@ def test_ctl_19_nginx_tem_csp_restritivo_e_so_repassa_a_api():
     csp = re.search(r'Content-Security-Policy "([^"]+)"', NGINX).group(1)
     assert "default-src 'self'" in csp
     assert "script-src 'self' 'wasm-unsafe-eval'" in csp
-    assert "connect-src 'self'" in csp
+    # `blob:` é só a foto que a pessoa acabou de escolher (o seletor a lê por um endereço blob do próprio navegador);
+    # sem isso a escolha de foto falha no navegador (achado do teste no navegador da 006).
+    assert "connect-src 'self' blob:" in csp
     assert "frame-ancestors 'none'" in csp
     assert "object-src" not in csp or "object-src 'none'" in csp
     assert "unsafe-eval'" not in csp.replace("wasm-unsafe-eval'", "")
@@ -112,12 +114,19 @@ def test_ctl_20_sdk_do_flutter_vem_com_sha256_conferido():
 
 
 def test_ctl_20_pacotes_do_front_sao_so_os_do_adr_0005():
-    """[003] CTL-20: pacote novo exige ADR; `pubspec.yaml` só pode ter os do ADR-0005, e o `pubspec.lock` é versionado."""
+    """[003] CTL-20: pacote novo exige ADR; `pubspec.yaml` só pode ter os dos ADR-0005, 0008 e 0011, e o `pubspec.lock` é versionado."""
     secao = lambda nome: re.search(rf"^{nome}:\n((?:  .*\n|\n)+)", PUBSPEC, re.M).group(1)  # noqa: E731
     pacotes = set(re.findall(r"^  ([a-z_]+):", secao("dependencies"), re.M))
     dev = set(re.findall(r"^  ([a-z_]+):", secao("dev_dependencies"), re.M))
 
-    assert pacotes == {"flutter", "dio", "flutter_riverpod", "go_router", "image_picker"}
+    assert pacotes == {
+        "flutter",
+        "dio",
+        "flutter_riverpod",
+        "go_router",
+        "image_picker",
+        "characters",
+    }
     assert dev == {"flutter_test", "flutter_lints", "mocktail"}
     assert (RAIZ / "frontend/pubspec.lock").exists()
 

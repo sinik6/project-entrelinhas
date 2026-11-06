@@ -55,8 +55,13 @@ class _GrupoPageState extends ConsumerState<GrupoPage> {
       _erro = null;
     });
     try {
-      final grupo = await ref.read(apiProvider).criarGrupo();
-      if (mounted) setState(() => _grupo = grupo);
+      final api = ref.read(apiProvider);
+      final grupo = await api.criarGrupo();
+      // Hoje e Diário dependem de a sessão saber do grupo.
+      final perfil = await api.perfil();
+      if (!mounted) return;
+      ref.read(sessaoProvider.notifier).atualizar(perfil);
+      setState(() => _grupo = grupo);
     } on Object catch (erro) {
       _tratar(erro);
     } finally {
@@ -107,6 +112,7 @@ class _GrupoPageState extends ConsumerState<GrupoPage> {
         ? null
         : ref.watch(linkDoConviteProvider)(convite.codigo);
     return Pagina(
+      key: const Key('pagina-do-grupo'),
       filhos: [
         titulo(context, 'Seu grupo'),
         const SizedBox(height: 16),

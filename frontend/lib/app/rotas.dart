@@ -4,7 +4,9 @@ import 'package:entrelinhas/features/acesso/carregando_page.dart';
 import 'package:entrelinhas/features/acesso/convite_page.dart';
 import 'package:entrelinhas/features/acesso/entrar_page.dart';
 import 'package:entrelinhas/features/acesso/sessao.dart';
+import 'package:entrelinhas/features/diario/diario_page.dart';
 import 'package:entrelinhas/features/grupo/grupo_page.dart';
+import 'package:entrelinhas/features/hoje/hoje_page.dart';
 import 'package:entrelinhas/features/perfil/perfil_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +28,11 @@ final roteadorProvider = Provider<GoRouter>((ref) {
     if (perfil == null) return publica ? null : '/entrar';
     if (!perfil.completo) {
       return destino == '/perfil' ? null : '/perfil'; // REQ-5.5
+    }
+    final temGrupo = perfil.grupo != null;
+    // Hoje e Diário só existem para quem tem grupo (REQ-11.1): sem grupo, o app leva ao Grupo.
+    if (!temGrupo && (destino == '/hoje' || destino == '/diario')) {
+      return '/grupo';
     }
     return publica || destino == '/carregando' || destino == '/'
         ? '/grupo'
@@ -53,6 +60,14 @@ final roteadorProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, estado, filho) => Casca(filho: filho),
         routes: [
+          GoRoute(
+            path: '/hoje',
+            builder: (context, estado) => const HojePage(),
+          ),
+          GoRoute(
+            path: '/diario',
+            builder: (context, estado) => const DiarioPage(),
+          ),
           GoRoute(
             path: '/grupo',
             builder: (context, estado) => const GrupoPage(),

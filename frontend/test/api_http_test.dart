@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 import 'package:entrelinhas/shared/api/api_http.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -316,6 +317,131 @@ void main() {
       expect(grupo.membros[1].fotoUrl, isNull);
     },
   );
+
+  group('[006] cliente de registros', () {
+    const autorJson = {'nome': 'Ana', 'cor': '#4D7C0F', 'foto_url': null};
+    final doAutor = {
+      'id': 'r1',
+      'data': '2026-11-06',
+      'entregue_em': '2026-11-06T12:30:00Z',
+      'visibilidade': 'partial',
+      'trecho': {'inicio': 1, 'fim': 3},
+      'texto': 'abcdef',
+      'fotos': ['f1'],
+      'autor': autorJson,
+      'meu': true,
+    };
+    final doParceiro = {
+      'id': 'r2',
+      'data': '2026-11-05',
+      'entregue_em': '2026-11-05T12:00:00Z',
+      'visibilidade_efetiva': 'private',
+      'texto_visivel': null,
+      'fotos': <String>[],
+      'autor': {'nome': 'Bia', 'cor': '#B45309'},
+      'meu': false,
+      'aviso': 'Enviado, mas mantido privado pelo autor',
+    };
+
+    test('REQ-11.6: entrega leva texto, visibilidade, fotos e trecho em pontos de código, com CSRF', () async {
+      final adaptador = AdaptadorFalso(
+        (o) => switch (o.path) {
+          '/auth/csrf' => json({'token': 'T1'}),
+          _ => json(doAutor, 201),
+        },
+      );
+
+      final r = await apiCom(adaptador).entregarRegistro(
+        texto: 'abcdef',
+        visibilidade: 'partial',
+        fotos: ['f1'],
+        trecho: const Trecho(inicio: 1, fim: 3),
+      );
+
+      final envio = adaptador.requisicoes.firstWhere(
+        (o) => o.path == '/registros',
+      );
+      expect(envio.method, 'POST');
+      expect(envio.headers['X-CSRFToken'], 'T1');
+      expect(envio.data, {
+        'texto': 'abcdef',
+        'visibilidade': 'partial',
+        'fotos': ['f1'],
+        'trecho': {'inicio': 1, 'fim': 3},
+      });
+      expect(r.meu, isTrue);
+      expect(r.trecho, const Trecho(inicio: 1, fim: 3));
+      expect(r.visibilidade, 'partial');
+    });
+
+    test('REQ-11.6: sem trecho, o campo nem vai no corpo', () async {
+      final adaptador = AdaptadorFalso(
+        (o) =>
+            o.path == '/auth/csrf' ? json({'token': 'T'}) : json(doAutor, 201),
+      );
+
+      await apiCom(
+        adaptador,
+      ).entregarRegistro(texto: 'abcdef', visibilidade: 'full', fotos: ['f1']);
+
+      final envio = adaptador.requisicoes.firstWhere(
+        (o) => o.path == '/registros',
+      );
+      expect((envio.data as Map).containsKey('trecho'), isFalse);
+    });
+
+    test('REQ-12.1: lista pelo mês e lê as duas visões', () async {
+      final adaptador = AdaptadorFalso((o) => json([doAutor, doParceiro]));
+
+      final lista = await apiCom(adaptador).listarRegistros('2026-11');
+
+      expect(adaptador.requisicoes.single.uri.query, 'mes=2026-11');
+      expect(lista, hasLength(2));
+      expect(lista[0].meu, isTrue);
+      expect(lista[0].texto, 'abcdef');
+      expect(lista[1].meu, isFalse);
+      expect(lista[1].texto, isNull);
+      expect(lista[1].visibilidade, 'private');
+      expect(lista[1].aviso, 'Enviado, mas mantido privado pelo autor');
+      expect(lista[1].trecho, isNull);
+      expect(lista[1].autor.fotoUrl, isNull);
+    });
+
+    test(
+      'REQ-12.3: registro do parceiro lido pelo id usa texto_visivel',
+      () async {
+        final adaptador = AdaptadorFalso(
+          (o) => json({...doParceiro, 'texto_visivel': 'só isto'}),
+        );
+
+        final r = await apiCom(adaptador).lerRegistro('r2');
+
+        expect(adaptador.requisicoes.single.path, '/registros/r2');
+        expect(r.texto, 'só isto');
+      },
+    );
+
+    test('REQ-11.8: 409 do servidor vira ErroApi com a mensagem', () async {
+      final adaptador = AdaptadorFalso(
+        (o) => o.path == '/auth/csrf'
+            ? json({'token': 'T'})
+            : json({'detalhe': 'Você já entregou o registro de hoje.'}, 409),
+      );
+
+      await expectLater(
+        apiCom(adaptador).entregarRegistro(
+          texto: 'abcdefghij',
+          visibilidade: 'full',
+          fotos: ['f1'],
+        ),
+        throwsA(
+          isA<ErroApi>()
+              .having((e) => e.status, 'status', 409)
+              .having((e) => e.detalhe, 'detalhe', contains('já entregou')),
+        ),
+      );
+    });
+  });
 }
 
 extension on ApiHttp {

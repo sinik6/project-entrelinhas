@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Moldura das telas de quem já entrou: barra com "Sair" e navegação entre Grupo e Perfil.
+const _destinos = ['/hoje', '/diario', '/grupo', '/perfil'];
+
+/// Moldura das telas de quem já entrou: barra com "Sair" e navegação entre Hoje, Diário, Grupo e Perfil.
 class Casca extends ConsumerWidget {
   const Casca({required this.filho, super.key});
 
@@ -24,9 +26,19 @@ class Casca extends ConsumerWidget {
       ),
       body: SafeArea(child: filho),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: local == '/perfil' ? 1 : 0,
-        onDestinationSelected: (i) => context.go(i == 0 ? '/grupo' : '/perfil'),
+        selectedIndex: _destinos.indexOf(local).clamp(0, _destinos.length - 1),
+        onDestinationSelected: (i) => context.go(_destinos[i]),
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.edit_outlined),
+            selectedIcon: Icon(Icons.edit),
+            label: 'Hoje',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book),
+            label: 'Diário',
+          ),
           NavigationDestination(
             icon: Icon(Icons.group_outlined),
             selectedIcon: Icon(Icons.group),

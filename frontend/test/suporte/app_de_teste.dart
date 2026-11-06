@@ -2,6 +2,7 @@ import 'package:entrelinhas/app/app.dart';
 import 'package:entrelinhas/app/rotas.dart';
 import 'package:entrelinhas/features/grupo/link_do_convite.dart';
 import 'package:entrelinhas/shared/api/api.dart';
+import 'package:entrelinhas/shared/relogio.dart';
 import 'package:entrelinhas/shared/foto/seletor_de_foto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ Future<ApiFalsa> abrirApp(
   SeletorDeFoto? seletor,
   Size tamanho = const Size(412, 900),
   Brightness brilho = Brightness.light,
+  DateTime? agora,
 }) async {
   final falsa = api ?? ApiFalsa();
   tester.view.physicalSize = tamanho;
@@ -30,6 +32,7 @@ Future<ApiFalsa> abrirApp(
     ProviderScope(
       overrides: [
         apiProvider.overrideWithValue(falsa),
+        relogioProvider.overrideWithValue(() => agora ?? agoraDeTeste),
         if (seletor != null) seletorDeFotoProvider.overrideWithValue(seletor),
         linkDoConviteProvider.overrideWithValue(
           (codigo) => 'https://exemplo.org/entrelinhas/#/convite/$codigo',

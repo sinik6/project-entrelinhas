@@ -49,3 +49,6 @@ foram refeitos depois que a primeira rodada achou um mutante equivalente e uma a
 
 ## Veredito
 **Parcial.** Código, infra e telas da 004 estão prontos e testados localmente; faltam o deploy e a conferência no ar, a auditoria independente por subagente e o arquivamento em `fotos.md`.
+
+## Correção posterior (2026-11-06, achada no teste no navegador da 006)
+O seletor nativo, que aqui constava como não acionado, tinha defeito: a CSP do nginx (`connect-src 'self'`) bloqueava a leitura do `blob:` da foto escolhida, então a escolha de foto falharia no navegador. Corrigido para `connect-src 'self' blob:` (`test_ctl_19_*`); ver `006-registros-front/validation.md`.

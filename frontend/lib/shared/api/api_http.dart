@@ -2,6 +2,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 
 class ApiHttp implements Api {
@@ -184,6 +185,35 @@ class ApiHttp implements Api {
   Future<void> removerFotoDePerfil() async {
     await _alterar('DELETE', '/perfil/foto');
   }
+
+  @override
+  Future<Registro> entregarRegistro({
+    required String texto,
+    required String visibilidade,
+    required List<String> fotos,
+    Trecho? trecho,
+  }) async => Registro.fromJson(
+    await _alterar(
+      'POST',
+      '/registros',
+      corpo: {
+        'texto': texto,
+        'visibilidade': visibilidade,
+        'fotos': fotos,
+        if (trecho != null) 'trecho': trecho.toJson(),
+      },
+    ) as Map<String, dynamic>,
+  );
+
+  @override
+  Future<List<Registro>> listarRegistros(String mes) async => [
+    for (final r in await _ler('/registros?mes=$mes') as List<dynamic>)
+      Registro.fromJson(r as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<Registro> lerRegistro(String id) async =>
+      Registro.fromJson(await _ler('/registros/$id') as Map<String, dynamic>);
 
   @override
   Future<ConviteGerado> gerarConvite() async => ConviteGerado.fromJson(
