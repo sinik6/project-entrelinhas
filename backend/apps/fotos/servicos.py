@@ -13,6 +13,7 @@ from PIL import Image, ImageOps
 
 from apps.acesso.erros import ErroConflito, ErroValidacao
 from apps.acesso.models import Perfil
+from apps.registros.models import Registro
 
 from .erros import ErroLimite, ErroNaoEncontrado
 from .models import Foto
@@ -167,6 +168,18 @@ def pode_ver(usuario, foto: Foto) -> bool:
     if foto.finalidade == Foto.Finalidade.PERFIL:
         grupo = _grupo_de(foto.dono_id)
         return grupo is not None and grupo == _grupo_de(usuario.pk)
+    if foto.registro_id:
+        # A foto mostra o texto inteiro: o parceiro só a vê quando o registro é `full` e do grupo dele (spec 005).
+        registro = (
+            Registro.objects.filter(pk=foto.registro_id).values("visibilidade", "grupo_id").first()
+        )
+        grupo = _grupo_de(usuario.pk)
+        return (
+            registro is not None
+            and registro["visibilidade"] == Registro.Visibilidade.FULL
+            and grupo is not None
+            and registro["grupo_id"] == grupo
+        )
     return False
 
 

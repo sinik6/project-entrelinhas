@@ -1,6 +1,6 @@
 # ADR-0009 — Offsets em pontos de código Unicode
 
-- Status: proposto (agente, por delegação do usuário em 2026-11-05); vira "aceito" na ratificação do G1
+- Status: aceito (usuário, 2026-11-05: "Ir para a 005" ao pedir a implementação; proposto pelo agente por delegação)
 - Data: 2026-11-05
 - Mudança de origem: 005-registros-backend (vale também para 007 e 008)
 

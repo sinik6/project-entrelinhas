@@ -6,4 +6,5 @@ urlpatterns = [
     path("", include("apps.common.urls")),
     path("", include("apps.acesso.urls")),
     path("", include("apps.fotos.urls")),
+    path("", include("apps.registros.urls")),
 ]

@@ -1,7 +1,6 @@
 openapi: 3.1.0
 info:
   title: Entrelinhas — registros (mudança 005)
-  x-estado: planejado
   version: 1.2.0
   description: Registros diários com visibilidade filtrada no servidor. Acrescenta rotas ao contrato; `GET /fotos/{id}/arquivo` da 004 passa a aceitar o parceiro quando o registro da foto é `full`.
 servers:

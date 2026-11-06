@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.common",
     "apps.acesso",
     "apps.fotos",
+    "apps.registros",
 ]
 
 MIDDLEWARE = [

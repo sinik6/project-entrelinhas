@@ -24,6 +24,11 @@ class Foto(models.Model):
     arquivo = models.CharField(max_length=100)
     # Avulsa (False) ainda não pertence a registro nem ao perfil; a limpeza apaga as avulsas antigas.
     anexada = models.BooleanField(default=False)
+    # Foto de manuscrito entregue num registro (spec 005): `PROTECT` porque registro entregue não se apaga.
+    registro = models.ForeignKey(
+        "registros.Registro", on_delete=models.PROTECT, null=True, blank=True, related_name="fotos"
+    )
+    ordem = models.PositiveSmallIntegerField(default=0)
     criada_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
