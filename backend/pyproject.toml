@@ -11,6 +11,7 @@ dependencies = [
     "gunicorn>=23",
     "whitenoise>=6.9",
     "pillow>=13.0.0,<14",
+    "pywebpush>=2.5.0",
 ]
 
 [dependency-groups]

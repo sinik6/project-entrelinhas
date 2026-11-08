@@ -3,6 +3,7 @@ import 'package:entrelinhas/shared/api/erros.dart';
 import 'package:entrelinhas/shared/ui/pagina.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class EntrarPage extends ConsumerStatefulWidget {
   const EntrarPage({super.key});
@@ -72,7 +73,12 @@ class _EntrarPageState extends ConsumerState<EntrarPage> {
               onPressed: _ocupado ? null : _entrar,
               child: const Text('Entrar'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => context.go('/recuperar'),
+              child: const Text('Esqueci minha senha'),
+            ),
+            const SizedBox(height: 16),
             const Text(
               'Recebeu um convite? Abra o link que a outra pessoa mandou.',
             ),

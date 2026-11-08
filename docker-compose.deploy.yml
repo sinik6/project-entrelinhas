@@ -46,6 +46,16 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       # Fotos privadas (spec 004): volume só da API, fora de qualquer pasta pública; entra no backup do deploy.
       FOTOS_DIR: /data/fotos
+      # Lembretes (spec 010): a API só conhece a chave PÚBLICA; a privada fica só no serviço do disparador.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:?Configure VAPID_PUBLIC_KEY}
+      # E-mail da recuperação de senha (spec 011): SMTP por variáveis; a senha é segredo. `APP_URL_BASE` é a única
+      # base dos links dos e-mails (nunca o cabeçalho Host).
+      EMAIL_HOST: ${EMAIL_HOST:?Configure EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT:?Configure EMAIL_PORT}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:?Configure EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:?Configure EMAIL_HOST_PASSWORD}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?Configure DEFAULT_FROM_EMAIL}
+      APP_URL_BASE: ${APP_URL_BASE:?Configure APP_URL_BASE}
     volumes: [fotos_data:/data/fotos]
     depends_on:
       db: {condition: service_healthy}
@@ -96,6 +106,35 @@ services:
       traefik.http.routers.entrelinhas-http.middlewares: redirect-to-https@file
       traefik.http.routers.entrelinhas-http.service: entrelinhas-api
 
+  # Disparador do lembrete diário (spec 010, ADR-0012): a MESMA imagem da API com outro comando. Sem porta, sem
+  # rótulos do Traefik e fora da rede traefik_proxy: ninguém chega nele de fora. Só ele recebe a chave VAPID privada.
+  # A saúde é o batimento: o laço atualiza o arquivo a cada ciclo (30 s); parado há mais de 2 minutos = doente.
+  entrelinhas-lembretes:
+    build: ./backend
+    restart: unless-stopped
+    command: python manage.py rodar_lembretes
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Configure DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: entrelinhas-lembretes
+      POSTGRES_HOST: entrelinhas-db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:?Configure VAPID_PRIVATE_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:?Configure VAPID_PUBLIC_KEY}
+      VAPID_ASSUNTO: ${VAPID_ASSUNTO:?Configure VAPID_ASSUNTO}
+      LEMBRETES_BATIMENTO: /tmp/lembretes.batimento
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import os,sys,time; p='/tmp/lembretes.batimento'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 120 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      internal:
+        aliases: [entrelinhas-lembretes]
+
   # O app (Flutter web) e o repasse de /api/ para a API, numa só origem (ADR-0006). O Traefik tira o
   # prefixo /entrelinhas; o Admin (prioridade 200) e o limite de entrada (300) vencem o app (10).
   entrelinhas-web:
@@ -144,14 +183,14 @@ services:
       traefik.http.routers.entrelinhas-web-ip.priority: '10'
       traefik.http.routers.entrelinhas-web-ip.middlewares: entrelinhas-barra@docker,entrelinhas-prefixo@docker,secure-headers@file
       traefik.http.routers.entrelinhas-web-ip.service: entrelinhas-web
-      traefik.http.routers.entrelinhas-entrar-duckdns.rule: Host(`jpsys.duckdns.org`) && Method(`POST`) && (Path(`/entrelinhas/api/v1/auth/entrar`) || Path(`/entrelinhas/api/v1/convites/aceitar`))
+      traefik.http.routers.entrelinhas-entrar-duckdns.rule: Host(`jpsys.duckdns.org`) && Method(`POST`) && (Path(`/entrelinhas/api/v1/auth/entrar`) || Path(`/entrelinhas/api/v1/convites/aceitar`) || Path(`/entrelinhas/api/v1/auth/recuperacao`) || Path(`/entrelinhas/api/v1/auth/redefinir`))
       traefik.http.routers.entrelinhas-entrar-duckdns.entrypoints: websecure
       traefik.http.routers.entrelinhas-entrar-duckdns.tls: 'true'
       traefik.http.routers.entrelinhas-entrar-duckdns.tls.certresolver: duckdns
       traefik.http.routers.entrelinhas-entrar-duckdns.priority: '300'
       traefik.http.routers.entrelinhas-entrar-duckdns.middlewares: entrelinhas-entrar-limite@docker,entrelinhas-prefixo@docker,secure-headers@file
       traefik.http.routers.entrelinhas-entrar-duckdns.service: entrelinhas-web
-      traefik.http.routers.entrelinhas-entrar-ip.rule: Host(`217.216.82.25`) && Method(`POST`) && (Path(`/entrelinhas/api/v1/auth/entrar`) || Path(`/entrelinhas/api/v1/convites/aceitar`))
+      traefik.http.routers.entrelinhas-entrar-ip.rule: Host(`217.216.82.25`) && Method(`POST`) && (Path(`/entrelinhas/api/v1/auth/entrar`) || Path(`/entrelinhas/api/v1/convites/aceitar`) || Path(`/entrelinhas/api/v1/auth/recuperacao`) || Path(`/entrelinhas/api/v1/auth/redefinir`))
       traefik.http.routers.entrelinhas-entrar-ip.entrypoints: websecure
       traefik.http.routers.entrelinhas-entrar-ip.tls: 'true'
       traefik.http.routers.entrelinhas-entrar-ip.priority: '300'

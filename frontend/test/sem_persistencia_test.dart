@@ -43,6 +43,12 @@ void main() {
     for (final arquivo in arquivos) {
       final codigo = arquivo.readAsStringSync();
       for (final proibido in proibidos) {
+        // A ponte do Web Push (spec 010) precisa do `dart:js_interop`; ela não usa nenhum armazenamento (as outras
+        // palavras da lista continuam valendo para ela).
+        if (proibido == 'dart:js_interop' &&
+            arquivo.path.endsWith('shared/push/push_api_web.dart')) {
+          continue;
+        }
         if (codigo.contains(proibido)) {
           achados.add('${arquivo.path}: $proibido');
         }

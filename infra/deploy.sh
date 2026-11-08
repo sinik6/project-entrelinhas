@@ -42,6 +42,27 @@ echo "=== Construindo as imagens"
 docker build -t entrelinhas-flutter-sdk:local frontend
 dc build
 
+echo "=== Conferindo as chaves dos lembretes"
+# Antes de parar a API (spec 010, CTL-84): sem as chaves VAPID o disparador não sobe e o deploy abortaria no meio.
+# Só confere se estão preenchidas (nunca imprime o valor).
+for chave in VAPID_PRIVATE_KEY VAPID_PUBLIC_KEY VAPID_ASSUNTO; do
+    if [ -z "$(valor "$chave")" ]; then
+        echo "Faltam o segredo $chave (gere com 'python manage.py gerar_vapid' e crie no GitHub, ambiente production)." >&2
+        exit 1
+    fi
+done
+echo "   chaves presentes"
+
+echo "=== Conferindo o e-mail da recuperação de senha"
+# Antes de parar a API (spec 011, NFR-REC-4): sem o SMTP a recuperação não funcionaria. Só confere se estão preenchidas.
+for chave in EMAIL_HOST EMAIL_PORT EMAIL_HOST_USER EMAIL_HOST_PASSWORD DEFAULT_FROM_EMAIL APP_URL_BASE; do
+    if [ -z "$(valor "$chave")" ]; then
+        echo "Falta $chave (variável ou segredo do ambiente production no GitHub; ver a spec 011)." >&2
+        exit 1
+    fi
+done
+echo "   e-mail configurado"
+
 echo "=== Conferindo a configuração do administrador"
 # Antes de parar a API (spec 002, REQ-2.5): senha ausente, curta ou comum aborta aqui, com o Admin ainda
 # no ar. A conferência não usa o banco; a criação da conta vem depois, em "Administrador inicial".
@@ -80,6 +101,9 @@ dc up -d --wait --remove-orphans
 echo "=== Limpando fotos avulsas antigas"
 # `exec` (e não `run`): usa a API que acabou de subir, sem criar contêiner novo fora do balanceador (spec 004, REQ-6.9).
 dc exec -T entrelinhas-api python manage.py limpar_fotos
+
+echo "=== Limpando pedidos antigos de recuperação de senha"
+dc exec -T entrelinhas-api python manage.py limpar_pedidos
 
 echo "=== Conferindo pelo HTTPS público"
 # Rota nova: o Traefik pode levar alguns segundos para ler os labels. --retry-all-errors repete

@@ -37,6 +37,11 @@ exit 0
 
 ENV_PRODUCTION = (
     f"ADMIN_USUARIO='dono'\r\nADMIN_EMAIL='dono@example.com'\r\nSENHA_ADMIN_INICIAL='{SENHA}'\r\n"
+    "VAPID_PRIVATE_KEY='privada-de-teste'\r\nVAPID_PUBLIC_KEY='publica-de-teste'\r\n"
+    "VAPID_ASSUNTO='mailto:dono@example.com'\r\n"
+    "EMAIL_HOST='smtp.exemplo.org'\r\nEMAIL_PORT='587'\r\nEMAIL_HOST_USER='envio@exemplo.org'\r\n"
+    "EMAIL_HOST_PASSWORD='senha-smtp-de-teste'\r\nDEFAULT_FROM_EMAIL='Entrelinhas <envio@exemplo.org>'\r\n"
+    "APP_URL_BASE='https://app.exemplo.org/entrelinhas/'\r\n"
 )
 
 

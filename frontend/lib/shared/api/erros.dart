@@ -9,7 +9,9 @@ String mensagemDoErro(Object erro) {
     case 401:
       return 'Sua sessão acabou. Entre de novo.';
     case 403:
-      return 'Não foi possível confirmar a segurança do pedido. Recarregue a página e tente de novo.';
+      // 403 com mensagem do servidor é recusa de negócio (spec 007); sem ela, é falha de CSRF.
+      return erro.detalhe ??
+          'Não foi possível confirmar a segurança do pedido. Recarregue a página e tente de novo.';
     case 413:
       return 'A foto é grande demais. Escolha uma menor.';
     case 429:

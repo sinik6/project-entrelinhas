@@ -37,11 +37,11 @@ Regras:
 | 004-fotos | fotos — envio, armazenamento privado e entrega (manuscrito e perfil) | T0501 (adiantada) | implementada e testada localmente em 2026-11-05 (backend 232 testes, front 72; ADR-0007 e 0008 aceitos); sem commit nem deploy; faltam deploy, auditoria independente e arquivar |
 | 005-registros-backend | registros — backend (entrega só com foto e texto; visibilidade filtrada no servidor) | T0301, T0302, T0303 | no ar (e998f08 e correções 150dc53, app respondendo); auditada por revisor independente e corrigida (353 testes, mutação 26/26); faltam o login real no ar e arquivar |
 | 006-registros-front | registros — telas de escrita e leitura (o `frontend/` em Flutter já existe desde a 003) | T0304 | implementada e testada localmente em 2026-11-06 (184 testes Flutter, mutação 16/16, caminho `partial` com emoji visto no navegador local); achado e corrigido defeito da CSP (`blob:`) que quebrava a escolha de foto; sem commit nem deploy; faltam decisão sobre a fonte de emoji, deploy, auditoria independente e arquivar |
-| 007-destaques-backend | destaques — backend | T0401, T0402 | spec escrita em 2026-11-05, em revisão; sem código |
-| 008-destaques-front | destaques — front | T0403 | spec escrita em 2026-11-05, em revisão; sem código |
-| 009-calendario | calendario — backend e front | visão de 2026-11-03 | spec escrita em 2026-11-05, em revisão; sem código |
-| 010-lembretes | lembretes — PWA e Web Push | T0502 | spec escrita em 2026-11-05 (ADR-0012), em revisão; sem código |
-| 011-recuperacao-de-senha | acesso-espaco — recuperação de senha por e-mail (exige provedor de e-mail do usuário; pode ser antecipada) | — (pedido do usuário em 2026-11-03) | spec escrita em 2026-11-05 (ADR-0013), em revisão; sem código |
+| 007-destaques-backend | destaques — backend | T0401, T0402 | implementada e testada localmente em 2026-11-08 (43 testes de destaques, mutação 18/18; suíte 396); sem commit nem deploy; faltam deploy, auditoria independente e arquivar |
+| 008-destaques-front | destaques — front | T0403 | implementada e testada em widget em 2026-11-08 (241 testes Flutter, mutação 10/10); leitor com barra de ações em vez de menu nativo; não visto no navegador; sem commit nem deploy |
+| 009-calendario | calendario — backend e front | visão de 2026-11-03 | implementada e testada em 2026-11-08 (48 testes de backend, mutação 15/15 e 10/10; grade vista no navegador local); migração `acesso 0004 entrou_em`; sem commit nem deploy; faltam deploy, auditoria independente e arquivar |
+| 010-lembretes | lembretes — PWA e Web Push | T0502 | implementada e testada em 2026-11-08 (86 testes de backend, Node e Flutter; mutação 20 + 3 equivalentes); **nenhum push real nem service worker em navegador**; depende dos segredos VAPID do dono (T-5.1) e quebra o deploy sem eles; sem commit nem deploy |
+| 011-recuperacao-de-senha | acesso-espaco — recuperação de senha por e-mail | — (pedido do usuário em 2026-11-03) | implementada e testada em 2026-11-08 (42 testes de backend, 328 de Flutter; mutação 13 + 2 equivalentes; caminho principal visto no navegador local com e-mail no console); **nenhum e-mail real**; depende das credenciais de e-mail do dono (T-3.1) e quebra o deploy sem elas; sem commit nem deploy |
 
 ## Decisões tomadas pelo dono
 | Data | Decisão |

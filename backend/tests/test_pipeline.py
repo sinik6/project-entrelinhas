@@ -133,7 +133,10 @@ def test_ctl_4_senha_nao_entra_no_compose_nem_no_servico_da_api():
     run_admin = next(linha for linha in corpo.splitlines() if "-e SENHA_ADMIN_INICIAL" in linha)
     assert re.search(r"-e SENHA_ADMIN_INICIAL(?![=\w])", run_admin)
     assert "-e SENHA_ADMIN_INICIAL=" not in corpo
-    assert "for nome in DJANGO_SECRET_KEY POSTGRES_PASSWORD SENHA_ADMIN_INICIAL; do" in DEPLOY_YML
+    assert (
+        "for nome in DJANGO_SECRET_KEY POSTGRES_PASSWORD SENHA_ADMIN_INICIAL VAPID_PRIVATE_KEY VAPID_PUBLIC_KEY VAPID_ASSUNTO EMAIL_HOST_PASSWORD; do"
+        in DEPLOY_YML
+    )
 
 
 def test_ctl_8_workflow_grava_com_aspas_simples_e_recusa_aspa_no_valor():

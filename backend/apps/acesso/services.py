@@ -207,6 +207,13 @@ def trocar_senha(request, usuario, senha_atual: str, senha_nova: str) -> None:
 # ---------- grupo ----------
 
 
+def _hoje_em_sao_paulo():
+    """O dia de hoje no fuso do app, pelo mesmo relógio dos registros (spec 009). Import tardio: `registros` importa `acesso`."""
+    from apps.registros import services as registros
+
+    return registros.dia_de(registros.agora())
+
+
 def criar_grupo(usuario) -> dict:
     with transaction.atomic():
         perfil = Perfil.objects.select_for_update().filter(pk=usuario.pk).first()
@@ -216,7 +223,8 @@ def criar_grupo(usuario) -> dict:
             raise ErroConflito("Você já pertence a um grupo.")
         grupo = Grupo.objects.create()
         perfil.grupo = grupo
-        perfil.save(update_fields=["grupo"])
+        perfil.entrou_em = _hoje_em_sao_paulo()
+        perfil.save(update_fields=["grupo", "entrou_em"])
     return grupo_para_dict(grupo)
 
 
@@ -295,7 +303,13 @@ def aceitar_convite(request, codigo: str, nome: str, email: str, senha: str, cor
         except IntegrityError:
             # E-mail que já tem conta: a mesma resposta de qualquer convite inválido.
             raise ErroGenerico(MENSAGEM_CONVITE) from None
-        Perfil.objects.create(usuario=usuario, nome=nome_ok, cor=cor_ok, grupo=grupo)
+        Perfil.objects.create(
+            usuario=usuario,
+            nome=nome_ok,
+            cor=cor_ok,
+            grupo=grupo,
+            entrou_em=_hoje_em_sao_paulo(),
+        )
         convite.usado_em = timezone.now()
         convite.save(update_fields=["usado_em"])
     login(request, usuario, backend=BACKEND_PADRAO)

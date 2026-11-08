@@ -21,3 +21,6 @@ O front agora é Flutter/Dart, cujas `String` também são UTF-16: um emoji ocup
 ## Alternativas descartadas
 - **UTF-16 na API:** casa com o JavaScript, mas o Python não indexa assim; cada fatia exigiria recodificar.
 - **Grafemas:** o certo para o usuário, mas exige biblioteca nos dois lados e regra de versão do Unicode.
+
+## Anotação da 007 (destaques)
+Os offsets de um destaque são em pontos de código do **texto visível** do registro (`texto_visivel_para`): em `full`, o texto todo; em `partial`, só o trecho, para todos, inclusive o autor. Não são offsets do texto integral.

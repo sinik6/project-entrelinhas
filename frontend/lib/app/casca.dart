@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-const _destinos = ['/hoje', '/diario', '/grupo', '/perfil'];
+const _destinos = ['/hoje', '/diario', '/calendario', '/grupo', '/perfil'];
 
 /// Moldura das telas de quem já entrou: barra com "Sair" e navegação entre Hoje, Diário, Grupo e Perfil.
 class Casca extends ConsumerWidget {
@@ -38,6 +38,11 @@ class Casca extends ConsumerWidget {
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book),
             label: 'Diário',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Calendário',
           ),
           NavigationDestination(
             icon: Icon(Icons.group_outlined),

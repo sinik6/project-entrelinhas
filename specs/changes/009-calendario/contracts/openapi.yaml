@@ -1,7 +1,6 @@
 openapi: 3.1.0
 info:
   title: Entrelinhas — calendário (mudança 009)
-  x-estado: planejado
   version: 1.4.0
   description: Estado de cada dia do mês, derivado dos registros. Sem horários, sem texto, sem visibilidade.
 servers:

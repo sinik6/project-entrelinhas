@@ -7,8 +7,8 @@ ARG BASE_HREF=/
 ARG API_BASE=/api/v1
 WORKDIR /app
 COPY --chown=flutter frontend/ ./
-# Sem service worker (`--pwa-strategy=none`): a instalação como PWA e o cache vêm na mudança de lembretes,
-# e um service worker não pode guardar texto de registro.
+# Sem o service worker do Flutter (`--pwa-strategy=none`): ele guardaria o app (e dados) em cache. O app tem o seu
+# próprio `web/sw.js` (spec 010), que só reage a push e a toque na notificação e não guarda nada.
 RUN flutter pub get \
     && flutter build web --release --no-web-resources-cdn --pwa-strategy=none \
          --base-href "${BASE_HREF}" --dart-define=API_BASE="${API_BASE}"

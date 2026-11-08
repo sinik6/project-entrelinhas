@@ -169,6 +169,18 @@ def ler(usuario, registro_id) -> dict:
     return apresentar([registro], usuario)[0]
 
 
+def registro_legivel(usuario, registro_id) -> Registro:
+    """O registro, se a pessoa pode ler (mesma regra de `ler`); senão 404. Para outros apps (spec 007)."""
+    try:
+        identificador = uuid.UUID(str(registro_id))
+    except ValueError:
+        raise ErroNaoEncontrado from None
+    registro = Registro.objects.filter(pk=identificador).first()
+    if registro is None or not _pode_ler(registro, usuario):
+        raise ErroNaoEncontrado
+    return registro
+
+
 def _mes_valido(mes) -> tuple[int, int]:
     if not isinstance(mes, str) or not MES.fullmatch(mes):
         raise ErroValidacao({"mes": ["Informe o mês como AAAA-MM."]})

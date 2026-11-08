@@ -56,6 +56,18 @@ server {
         proxy_connect_timeout 5s;
     }
 
+    # Service worker (spec 010): nunca em cache, e com escopo permitido no prefixo do app. Ele só reage a push e a
+    # toque na notificação; não guarda dado nenhum (NFR-LEMB-2).
+    location = /sw.js {
+        root /srv/app;
+        add_header Cache-Control "no-cache" always;
+        # Relativo ao endereço do script: vira /entrelinhas/ na VPS (o Traefik tira o prefixo) e / no desenvolvimento.
+        add_header Service-Worker-Allowed "./" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+
     # Arquivos que mudam a cada build: o navegador sempre pergunta de novo.
     location ~ ^/(index\.html|flutter_bootstrap\.js|version\.json)$ {
         root /srv/app;

@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 import 'package:entrelinhas/shared/api/api_http.dart';
+import 'package:entrelinhas/shared/push/push_api.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class AdaptadorFalso implements HttpClientAdapter {
@@ -439,6 +440,272 @@ void main() {
               .having((e) => e.status, 'status', 409)
               .having((e) => e.detalhe, 'detalhe', contains('já entregou')),
         ),
+      );
+    });
+  });
+
+  group('[008] cliente de destaques', () {
+    const autor = {'nome': 'Bia', 'cor': '#B45309'};
+    final destaque = {
+      'id': 'd1',
+      'inicio': 5,
+      'fim': 18,
+      'trecho': 'tudo bem hoje',
+      'autor': autor,
+      'meu': false,
+      'criado_em': '2026-11-06T12:00:00Z',
+      'comentarios': [
+        {
+          'id': 'c1',
+          'texto': 'Gostei.',
+          'autor': autor,
+          'meu': false,
+          'criado_em': '2026-11-06T12:05:00Z',
+          'editado_em': null,
+        },
+      ],
+    };
+
+    test('REQ-15.2: cria o destaque com posições, comentário e CSRF', () async {
+      final adaptador = AdaptadorFalso(
+        (o) =>
+            o.path == '/auth/csrf' ? json({'token': 'T'}) : json(destaque, 201),
+      );
+
+      final d = await apiCom(adaptador)
+          .criarDestaque('r1', inicio: 5, fim: 18, comentario: 'Gostei.');
+
+      final envio = adaptador.requisicoes.firstWhere(
+        (o) => o.path == '/registros/r1/destaques',
+      );
+      expect(envio.method, 'POST');
+      expect(envio.headers['X-CSRFToken'], 'T');
+      expect(envio.data, {'inicio': 5, 'fim': 18, 'comentario': 'Gostei.'});
+      expect(d.trecho, 'tudo bem hoje');
+      expect(d.comentarios.single.texto, 'Gostei.');
+      expect(d.comentarios.single.editadoEm, isNull);
+    });
+
+    test('REQ-15.2: sem comentário o campo nem vai no corpo', () async {
+      final adaptador = AdaptadorFalso(
+        (o) =>
+            o.path == '/auth/csrf' ? json({'token': 'T'}) : json(destaque, 201),
+      );
+
+      await apiCom(adaptador).criarDestaque('r1', inicio: 0, fim: 3);
+
+      final envio = adaptador.requisicoes.firstWhere(
+        (o) => o.path == '/registros/r1/destaques',
+      );
+      expect((envio.data as Map).containsKey('comentario'), isFalse);
+    });
+
+    test(
+      'REQ-15.4: lista, comenta, edita e apaga pelas rotas certas',
+      () async {
+        final adaptador = AdaptadorFalso((o) {
+          if (o.path == '/auth/csrf') return json({'token': 'T'});
+          if (o.method == 'DELETE') return json({}, 204);
+          if (o.path.startsWith('/comentarios') ||
+              o.path.endsWith('/comentarios')) {
+            return json(
+              (destaque['comentarios']! as List).first,
+              o.method == 'POST' ? 201 : 200,
+            );
+          }
+          return json([destaque]);
+        });
+        final api = apiCom(adaptador);
+
+        final lista = await api.listarDestaques('r1');
+        await api.comentar('d1', 'oi');
+        await api.editarComentario('c1', 'novo');
+        await api.apagarComentario('c1');
+        await api.apagarDestaque('d1');
+
+        expect(lista.single.id, 'd1');
+        final rotas = [
+          for (final o in adaptador.requisicoes.where(
+            (o) => o.path != '/auth/csrf',
+          ))
+            '${o.method} ${o.path}',
+        ];
+        expect(rotas, [
+          'GET /registros/r1/destaques',
+          'POST /destaques/d1/comentarios',
+          'PATCH /comentarios/c1',
+          'DELETE /comentarios/c1',
+          'DELETE /destaques/d1',
+        ]);
+      },
+    );
+
+    test(
+      'REQ-15.8: 403 da regra de negócio chega com a frase do servidor',
+      () async {
+        final adaptador = AdaptadorFalso(
+          (o) => o.path == '/auth/csrf'
+              ? json({'token': 'T'})
+              : json({'detalhe': 'Só quem escreveu pode fazer isso.'}, 403),
+        );
+
+        await expectLater(
+          apiCom(adaptador).apagarDestaque('d1'),
+          throwsA(
+            isA<ErroApi>().having(
+              (e) => e.detalhe,
+              'detalhe',
+              contains('Só quem'),
+            ),
+          ),
+        );
+      },
+    );
+  });
+
+  test(
+    '[009] REQ-17.1: o calendário do mês vem com membros e estados alinhados',
+    () async {
+      final adaptador = AdaptadorFalso(
+        (o) => json({
+          'mes': '2026-11',
+          'hoje': '2026-11-06',
+          'membros': [
+            {'nome': 'Ana', 'cor': '#4D7C0F', 'foto_url': null},
+            {'nome': 'Bia', 'cor': '#B45309', 'foto_url': null},
+          ],
+          'dias': [
+            {
+              'data': '2026-11-01',
+              'estados': ['escreveu', 'fora'],
+              'juntos': false,
+            },
+            {
+              'data': '2026-11-02',
+              'estados': ['escreveu', 'escreveu'],
+              'juntos': true,
+            },
+          ],
+        }),
+      );
+
+      final c = await apiCom(adaptador).calendario('2026-11');
+
+      expect(adaptador.requisicoes.single.uri.query, 'mes=2026-11');
+      expect(c.membros.map((m) => m.nome), ['Ana', 'Bia']);
+      expect(c.dias[0].estados, ['escreveu', 'fora']);
+      expect(c.dias[1].juntos, isTrue);
+      expect(c.dias[1].chave, '2026-11-02');
+      expect(c.hoje, DateTime(2026, 11, 6));
+    },
+  );
+
+  group('[010] cliente de lembretes', () {
+    test(
+      'REQ-18.2: a chave pública vem da API; 503 vira "sem lembretes" (nulo)',
+      () async {
+        final com = AdaptadorFalso((o) => json({'chave': 'PUB'}));
+        final sem = AdaptadorFalso(
+          (o) => json({'detalhe': 'Os lembretes não estão disponíveis.'}, 503),
+        );
+
+        expect(await apiCom(com).chavePublicaDeLembretes(), 'PUB');
+        expect(await apiCom(sem).chavePublicaDeLembretes(), isNull);
+      },
+    );
+
+    test('REQ-18.2: outro erro na chave (401) continua sendo erro', () async {
+      final adaptador = AdaptadorFalso((o) => json({'detalhe': 'x'}, 401));
+
+      await expectLater(
+        apiCom(adaptador).chavePublicaDeLembretes(),
+        throwsA(isA<ErroApi>().having((e) => e.status, 'status', 401)),
+      );
+    });
+
+    test('REQ-18.3 e 18.6: guarda e remove a assinatura, com CSRF e o formato do servidor', () async {
+      final adaptador = AdaptadorFalso(
+        (o) => o.path == '/auth/csrf' ? json({'token': 'T'}) : json({}, 201),
+      );
+      final api = apiCom(adaptador);
+
+      await api.guardarAssinatura(
+        const AssinaturaDoNavegador(
+          endpoint: 'https://fcm.googleapis.com/x',
+          p256dh: 'P',
+          auth: 'A',
+        ),
+      );
+      await api.removerAssinatura('https://fcm.googleapis.com/x');
+
+      final envios = adaptador.requisicoes
+          .where((o) => o.path == '/lembretes/assinaturas')
+          .toList();
+      expect(envios[0].method, 'POST');
+      expect(envios[0].headers['X-CSRFToken'], 'T');
+      expect(envios[0].data, {
+        'endpoint': 'https://fcm.googleapis.com/x',
+        'keys': {'p256dh': 'P', 'auth': 'A'},
+      });
+      expect(envios[1].method, 'DELETE');
+      expect(envios[1].data, {'endpoint': 'https://fcm.googleapis.com/x'});
+    });
+  });
+
+  group('[011] cliente da recuperação de senha', () {
+    test('REQ-22.2: o pedido vai com CSRF, só com o e-mail', () async {
+      final adaptador = AdaptadorFalso(
+        (o) => o.path == '/auth/csrf'
+            ? json({'token': 'T'})
+            : json({
+                'detalhe': 'Se este e-mail tiver conta, enviamos um link.',
+              }, 202),
+      );
+
+      await apiCom(adaptador).pedirRecuperacao('ana@example.com');
+
+      final envio = adaptador.requisicoes.firstWhere(
+        (o) => o.path == '/auth/recuperacao',
+      );
+      expect(envio.method, 'POST');
+      expect(envio.headers['X-CSRFToken'], 'T');
+      expect(envio.data, {'email': 'ana@example.com'});
+    });
+
+    test(
+      'REQ-22.3: a redefinição manda uid, token e a senha nova; 204 sem corpo',
+      () async {
+        final adaptador = AdaptadorFalso(
+          (o) => o.path == '/auth/csrf' ? json({'token': 'T'}) : json({}, 204),
+        );
+
+        await apiCom(adaptador).redefinirSenha(
+          uid: 'MTA',
+          token: 'tok',
+          novaSenha: 'senha-nova-bem-comprida',
+        );
+
+        final envio = adaptador.requisicoes.firstWhere(
+          (o) => o.path == '/auth/redefinir',
+        );
+        expect(envio.data, {
+          'uid': 'MTA',
+          'token': 'tok',
+          'nova_senha': 'senha-nova-bem-comprida',
+        });
+      },
+    );
+
+    test('REQ-22.4: 400 do link inválido chega como ErroApi com a frase do servidor', () async {
+      final adaptador = AdaptadorFalso(
+        (o) => o.path == '/auth/csrf'
+            ? json({'token': 'T'})
+            : json({'detalhe': 'Link inválido ou vencido.'}, 400),
+      );
+
+      await expectLater(
+        apiCom(adaptador).redefinirSenha(uid: 'x', token: 'y', novaSenha: 'z'),
+        throwsA(isA<ErroApi>().having((e) => e.status, 'status', 400)),
       );
     });
   });

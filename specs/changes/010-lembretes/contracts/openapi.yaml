@@ -1,7 +1,6 @@
 openapi: 3.1.0
 info:
   title: Entrelinhas — lembretes (mudança 010)
-  x-estado: planejado
   version: 1.5.0
   description: Assinaturas de Web Push. O disparo é do serviço `entrelinhas-lembretes`, sem rota pública.
 servers:

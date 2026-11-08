@@ -7,6 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'suporte/api_falsa.dart';
 import 'suporte/app_de_teste.dart';
 import 'suporte/hoje_de_teste.dart';
+import 'suporte/push_falso.dart';
+
+import 'package:entrelinhas/shared/push/push_api.dart';
+
+import 'calendario_test.dart' show abrirCalendario, celula;
+import 'suporte/leitor_de_teste.dart';
 import 'suporte/seletor_falso.dart';
 
 typedef Preparar = Future<void> Function(
@@ -171,11 +177,167 @@ Future<void> telaFotoCheia(
   Brightness brilho,
 ) async {
   await telaDiario(t, tamanho, brilho);
+  await t.ensureVisible(find.byKey(const Key('foto-f1')));
   await t.tap(find.byKey(const Key('foto-f1')));
   await t.pumpAndSettle();
 }
 
+final _doParceiro = registroDe(
+  id: 'r',
+  nome: 'Bia',
+  cor: corAmbar,
+  meu: false,
+  texto: 'Hoje foi um dia calmo e bonito.',
+  fotos: const [],
+);
+
+Future<void> telaLeitor(WidgetTester t, Size tamanho, Brightness brilho) async {
+  await abrirLeitor(t, _doParceiro, tamanho: tamanho, brilho: brilho);
+  await selecionarNoLeitor(t, 0, 4);
+  await t.pumpAndSettle();
+}
+
+Future<void> telaLeitorComDestaques(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirLeitor(
+    t,
+    _doParceiro,
+    destaques: [
+      destaqueDe(comentarios: [comentarioDe()]),
+      destaqueDe(
+        id: 'd2',
+        inicio: 9,
+        fim: 15,
+        trecho: 'um dia',
+        nome: 'Ana',
+        cor: corVerde,
+      ),
+    ],
+    tamanho: tamanho,
+    brilho: brilho,
+  );
+}
+
+Future<void> telaFolha(WidgetTester t, Size tamanho, Brightness brilho) async {
+  await telaLeitorComDestaques(t, tamanho, brilho);
+  await t.ensureVisible(find.byKey(const Key('destaque-d1')));
+  await t.tap(find.byKey(const Key('destaque-d1')));
+  await t.pumpAndSettle();
+}
+
+Future<void> telaCalendario(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirCalendario(t, tamanho: tamanho, brilho: brilho);
+}
+
+Future<void> telaFolhaDoDia(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirCalendario(t, tamanho: tamanho, brilho: brilho);
+  await t.tap(celula('2026-11-03'));
+  await t.pumpAndSettle();
+}
+
+Future<void> _perfilComLembrete(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+  PushFalso push,
+) async {
+  await abrirApp(
+    t,
+    api: ApiFalsa(sessao: perfilCompleto()),
+    push: push,
+    tamanho: tamanho,
+    brilho: brilho,
+  );
+  await t.tap(
+    find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Perfil'),
+    ),
+  );
+  await t.pumpAndSettle();
+  await t.ensureVisible(find.text('Lembrete diário'));
+  await t.pumpAndSettle();
+}
+
+Future<void> telaLembreteDesligado(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) => _perfilComLembrete(t, tamanho, brilho, PushFalso());
+
+Future<void> telaLembreteBloqueado(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) => _perfilComLembrete(
+  t,
+  tamanho,
+  brilho,
+  PushFalso(permissaoAtual: PermissaoDePush.negada),
+);
+
+Future<void> telaLembreteIphone(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) => _perfilComLembrete(
+  t,
+  tamanho,
+  brilho,
+  PushFalso(suporteDoNavegador: SuporteDePush.precisaInstalar),
+);
+
+Future<void> telaRecuperar(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirApp(t, tamanho: tamanho, brilho: brilho);
+  await t.tap(find.text('Esqueci minha senha'));
+  await t.pumpAndSettle();
+}
+
+Future<void> telaRedefinir(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirApp(t, tamanho: tamanho, brilho: brilho);
+  await irPara(t, '/redefinir/MTA/token-de-teste');
+}
+
+Future<void> telaLinkInvalido(
+  WidgetTester t,
+  Size tamanho,
+  Brightness brilho,
+) async {
+  await abrirApp(t, tamanho: tamanho, brilho: brilho);
+  await irPara(t, '/redefinir');
+}
+
 final telas = <String, Preparar>{
+  'recuperar senha': telaRecuperar,
+  'senha nova (link)': telaRedefinir,
+  'link inválido': telaLinkInvalido,
+  'perfil com lembrete desligado': telaLembreteDesligado,
+  'perfil com lembrete bloqueado': telaLembreteBloqueado,
+  'perfil com lembrete no iPhone': telaLembreteIphone,
+  'calendário': telaCalendario,
+  'folha do dia (calendário)': telaFolhaDoDia,
+  'leitor': telaLeitor,
+  'leitor com destaques': telaLeitorComDestaques,
+  'folha de comentários': telaFolha,
   'hoje': telaHoje,
   'hoje preenchida': telaHojePreenchida,
   'hoje com trecho': telaHojeComTrecho,

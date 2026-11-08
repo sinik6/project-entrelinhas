@@ -1,5 +1,7 @@
 // Cartão de um registro (spec 006, REQ-12.2 a 12.5): a visão do autor ou a do parceiro, exatamente como a API devolveu.
 // O texto é desenhado como `Text`, nunca como HTML ou marcação (NFR-TELA-2, ABU-13).
+import 'package:entrelinhas/features/destaques/leitor_page.dart';
+import 'package:entrelinhas/features/destaques/pintura.dart';
 import 'package:entrelinhas/features/diario/foto_tela_cheia.dart';
 import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/relogio.dart';
@@ -106,6 +108,16 @@ class CartaoDeRegistro extends StatelessWidget {
                       )
                     else
                       Text(r.aviso ?? avisoDePrivado),
+                    if (visivelDoRegistro(r) != null) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton(
+                          onPressed: () => abrirLeitorDoRegistro(context, r),
+                          child: const Text('Ler e destacar'),
+                        ),
+                      ),
+                    ],
                     if (!r.meu &&
                         texto != null &&
                         r.visibilidade == Visibilidade.trecho) ...[

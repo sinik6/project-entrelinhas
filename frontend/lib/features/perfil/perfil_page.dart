@@ -1,4 +1,5 @@
 import 'package:entrelinhas/features/acesso/sessao.dart';
+import 'package:entrelinhas/features/perfil/secao_de_lembrete.dart';
 import 'package:entrelinhas/shared/api/api.dart';
 import 'package:entrelinhas/shared/api/erros.dart';
 import 'package:entrelinhas/shared/foto/seletor_de_foto.dart';
@@ -280,6 +281,7 @@ class _PerfilPageState extends ConsumerState<PerfilPage> {
           child: const Text('Salvar'),
         ),
         const SizedBox(height: 32),
+        if (perfil != null && perfil.completo) const SecaoDeLembrete(),
         titulo(context, 'Trocar senha'),
         const SizedBox(height: 16),
         TextFormField(

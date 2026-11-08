@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 class Grupo(models.Model):
@@ -44,6 +45,10 @@ class Perfil(models.Model):
         "fotos.Foto", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
 
+    # Dia (em São Paulo) em que a pessoa entrou no grupo (spec 009): dias anteriores não contam como falha.
+    # `None` = desconhecido; o calendário nunca trata isso como "fora".
+    entrou_em = models.DateField(null=True, blank=True)
+
     class Meta:
         constraints = [
             models.CheckConstraint(
@@ -80,3 +85,18 @@ class Convite(models.Model):
 
     def __str__(self):
         return f"Convite do grupo {self.grupo_id}"
+
+
+class PedidoRecuperacao(models.Model):
+    """Um pedido de recuperação de senha (spec 011): só serve para o limite de 3 por hora; apagado depois de 24 horas."""
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pedidos_recuperacao"
+    )
+    criado_em = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        indexes = [models.Index(fields=["usuario", "criado_em"], name="pedido_recup_usuario_data")]
+
+    def __str__(self):
+        return f"pedido {self.usuario_id} {self.criado_em}"

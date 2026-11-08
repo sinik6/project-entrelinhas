@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     "apps.acesso",
     "apps.fotos",
     "apps.registros",
+    "apps.destaques",
+    "apps.calendario",
+    "apps.lembretes",
 ]
 
 MIDDLEWARE = [
@@ -158,3 +161,29 @@ LOGGING = {
         "django.request": {"level": "ERROR"},
     },
 }
+
+# Lembretes por Web Push (spec 010). As chaves vêm só do ambiente (segredos); sem elas os lembretes ficam desligados.
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", "")
+VAPID_ASSUNTO = env("VAPID_ASSUNTO", "mailto:admin@example.com")
+# Arquivo que o laço do disparador atualiza a cada ciclo; a saúde do contêiner confere a idade dele.
+LEMBRETES_BATIMENTO = Path(env("LEMBRETES_BATIMENTO", "/tmp/lembretes.batimento"))
+
+# E-mail e recuperação de senha (spec 011). As credenciais do SMTP vêm só do ambiente (segredos). Sem `EMAIL_HOST`
+# (desenvolvimento) o e-mail vai para o console; em produção o deploy exige as variáveis.
+EMAIL_HOST = env("EMAIL_HOST", "")
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST
+    else "django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_TIMEOUT = 15
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Entrelinhas <nao-responda@localhost>")
+# Endereço público do app (com o prefixo da VPS): é a única base dos links dos e-mails, nunca o cabeçalho Host.
+APP_URL_BASE = env("APP_URL_BASE", "http://localhost:8011/")
+PASSWORD_RESET_TIMEOUT = 3600  # o link de redefinição vale 1 hora

@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import services
+from . import recuperacao, services
 from .erros import ErroConflito, ErroDeNegocio, ErroGenerico, ErroValidacao
 from .serializers import (
     AceitarConviteSerializer,
@@ -113,3 +113,25 @@ class ConviteAceitarView(ViewDoAcesso):
             dados["cor"],
         )
         return Response(services.perfil_para_dict(usuario), status=status.HTTP_201_CREATED)
+
+
+class RecuperacaoView(ViewDoAcesso):
+    """Pede o link de redefinição. A resposta é sempre a mesma: nada diz se o e-mail tem conta (spec 011, ABU-24)."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        dados = request.data if isinstance(request.data, dict) else {}
+        recuperacao.pedir(dados.get("email"))
+        return Response({"detalhe": recuperacao.MENSAGEM_PEDIDO}, status=status.HTTP_202_ACCEPTED)
+
+
+class RedefinirView(ViewDoAcesso):
+    """Define a senha nova com o `uid` e o token do e-mail. Não abre sessão."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        dados = request.data if isinstance(request.data, dict) else {}
+        recuperacao.redefinir(dados.get("uid"), dados.get("token"), dados.get("nova_senha"))
+        return Response(status=status.HTTP_204_NO_CONTENT)

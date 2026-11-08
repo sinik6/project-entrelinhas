@@ -2,8 +2,11 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:entrelinhas/features/calendario/modelos.dart';
+import 'package:entrelinhas/features/destaques/modelos.dart';
 import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api.dart';
+import 'package:entrelinhas/shared/push/push_api.dart';
 
 class ApiHttp implements Api {
   ApiHttp({Dio? dio})
@@ -214,6 +217,115 @@ class ApiHttp implements Api {
   @override
   Future<Registro> lerRegistro(String id) async =>
       Registro.fromJson(await _ler('/registros/$id') as Map<String, dynamic>);
+
+  @override
+  Future<void> pedirRecuperacao(String email) async {
+    await _alterar('POST', '/auth/recuperacao', corpo: {'email': email});
+  }
+
+  @override
+  Future<void> redefinirSenha({
+    required String uid,
+    required String token,
+    required String novaSenha,
+  }) async {
+    await _alterar(
+      'POST',
+      '/auth/redefinir',
+      corpo: {'uid': uid, 'token': token, 'nova_senha': novaSenha},
+    );
+  }
+
+  @override
+  Future<String?> chavePublicaDeLembretes() async {
+    try {
+      final dados =
+          await _ler('/lembretes/chave-publica') as Map<String, dynamic>;
+      return dados['chave'] as String?;
+    } on ErroApi catch (erro) {
+      if (erro.status == 503) return null;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> guardarAssinatura(AssinaturaDoNavegador assinatura) async {
+    await _alterar(
+      'POST',
+      '/lembretes/assinaturas',
+      corpo: {
+        'endpoint': assinatura.endpoint,
+        'keys': {'p256dh': assinatura.p256dh, 'auth': assinatura.auth},
+      },
+    );
+  }
+
+  @override
+  Future<void> removerAssinatura(String endpoint) async {
+    await _alterar(
+      'DELETE',
+      '/lembretes/assinaturas',
+      corpo: {'endpoint': endpoint},
+    );
+  }
+
+  @override
+  Future<Calendario> calendario(String mes) async => Calendario.fromJson(
+    await _ler('/calendario?mes=$mes') as Map<String, dynamic>,
+  );
+
+  @override
+  Future<List<Destaque>> listarDestaques(String registroId) async => [
+    for (final d
+        in await _ler('/registros/$registroId/destaques') as List<dynamic>)
+      Destaque.fromJson(d as Map<String, dynamic>),
+  ];
+
+  @override
+  Future<Destaque> criarDestaque(
+    String registroId, {
+    required int inicio,
+    required int fim,
+    String? comentario,
+  }) async => Destaque.fromJson(
+    await _alterar(
+      'POST',
+      '/registros/$registroId/destaques',
+      corpo: {'inicio': inicio, 'fim': fim, 'comentario': ?comentario},
+    ) as Map<String, dynamic>,
+  );
+
+  @override
+  Future<void> apagarDestaque(String destaqueId) async {
+    await _alterar('DELETE', '/destaques/$destaqueId');
+  }
+
+  @override
+  Future<Comentario> comentar(String destaqueId, String texto) async =>
+      Comentario.fromJson(
+        await _alterar(
+          'POST',
+          '/destaques/$destaqueId/comentarios',
+          corpo: {'texto': texto},
+        ) as Map<String, dynamic>,
+      );
+
+  @override
+  Future<Comentario> editarComentario(
+    String comentarioId,
+    String texto,
+  ) async => Comentario.fromJson(
+    await _alterar(
+      'PATCH',
+      '/comentarios/$comentarioId',
+      corpo: {'texto': texto},
+    ) as Map<String, dynamic>,
+  );
+
+  @override
+  Future<void> apagarComentario(String comentarioId) async {
+    await _alterar('DELETE', '/comentarios/$comentarioId');
+  }
 
   @override
   Future<ConviteGerado> gerarConvite() async => ConviteGerado.fromJson(

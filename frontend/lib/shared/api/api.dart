@@ -1,8 +1,11 @@
 // Contrato da API e modelos (specs 003 e 004). O app só conversa com a API por esta interface; os testes usam uma falsa.
 import 'dart:typed_data';
 
+import 'package:entrelinhas/features/calendario/modelos.dart';
+import 'package:entrelinhas/features/destaques/modelos.dart';
 import 'package:entrelinhas/features/hoje/modelos.dart';
 import 'package:entrelinhas/shared/api/api_http.dart';
+import 'package:entrelinhas/shared/push/push_api.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Membro {
@@ -150,6 +153,37 @@ abstract class Api {
   /// Registros do grupo no mês `AAAA-MM`, na visão de quem pede, do mais novo para o mais antigo.
   Future<List<Registro>> listarRegistros(String mes);
   Future<Registro> lerRegistro(String id);
+
+  /// Estado de cada dia do mês `AAAA-MM` (spec 009).
+  Future<Calendario> calendario(String mes);
+
+  // Recuperação de senha por e-mail (spec 011).
+  /// Pede o link. O servidor responde sempre igual (202), exista a conta ou não.
+  Future<void> pedirRecuperacao(String email);
+  Future<void> redefinirSenha({
+    required String uid,
+    required String token,
+    required String novaSenha,
+  });
+
+  // Lembretes por Web Push (spec 010).
+  /// A chave pública VAPID, ou `null` quando o servidor não tem lembretes configurados (503).
+  Future<String?> chavePublicaDeLembretes();
+  Future<void> guardarAssinatura(AssinaturaDoNavegador assinatura);
+  Future<void> removerAssinatura(String endpoint);
+
+  // Destaques e comentários (spec 007).
+  Future<List<Destaque>> listarDestaques(String registroId);
+  Future<Destaque> criarDestaque(
+    String registroId, {
+    required int inicio,
+    required int fim,
+    String? comentario,
+  });
+  Future<void> apagarDestaque(String destaqueId);
+  Future<Comentario> comentar(String destaqueId, String texto);
+  Future<Comentario> editarComentario(String comentarioId, String texto);
+  Future<void> apagarComentario(String comentarioId);
   Future<ConviteGerado> gerarConvite();
   Future<Perfil> aceitarConvite({
     required String codigo,

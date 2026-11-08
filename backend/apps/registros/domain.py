@@ -65,6 +65,19 @@ def fatia(texto: str, inicio: int, fim: int) -> str:
     return texto[inicio:fim]
 
 
+def texto_visivel_para(registro, usuario_id) -> str | None:
+    """O texto que a pessoa pode ler do registro, ou `None`. É a ÚNICA porta de outros apps ao texto (spec 007).
+
+    Em `full` é o texto todo; em `partial`, só o trecho (para todos, inclusive o autor: os offsets dos destaques são
+    relativos a ele, ADR-0009); em `private` não há texto para ninguém aqui.
+    """
+    if registro.visibilidade == "full":
+        return registro.texto
+    if registro.visibilidade == "partial":
+        return fatia(registro.texto, registro.trecho_inicio, registro.trecho_fim)
+    return None
+
+
 def _iso(valor):
     return valor.isoformat() if hasattr(valor, "isoformat") else valor
 

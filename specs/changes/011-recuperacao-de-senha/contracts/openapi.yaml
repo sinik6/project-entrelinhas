@@ -1,7 +1,6 @@
 openapi: 3.1.0
 info:
   title: Entrelinhas — recuperação de senha (mudança 011)
-  x-estado: planejado
   version: 1.6.0
   description: Duas rotas públicas novas, com proteção CSRF e balde de 5 por minuto no Traefik.
 servers:

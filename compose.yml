@@ -42,6 +42,24 @@ services:
     user: root
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
+  # Disparador dos lembretes (spec 010): mesma imagem da API. Em desenvolvimento as chaves VAPID são opcionais:
+  # sem elas os lembretes ficam desligados (a rota da chave pública responde 503 e o app esconde a seção).
+  lembretes:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./backend:/app
+    command: python manage.py rodar_lembretes
+
   # O app Flutter web e o repasse de /api/ para a API, numa só origem: http://localhost:8011
   web:
     build:
